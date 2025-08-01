@@ -1,8 +1,14 @@
 {
   "tasks": {
-    "test": "deno run test.ts",
+    "test": "deno test",
+    "test:unit": "deno test *.test.ts",
+    "test:integration": "deno run --allow-net integration.test.ts",
     "dev": "deno run --allow-net server.ts",
     "start": "deno run --allow-net server.ts"
+  },
+  "test": {
+    "include": ["**/*.test.ts"],
+    "exclude": ["integration.test.ts"]
   },
   "compilerOptions": {
     "lib": ["deno.window"],
