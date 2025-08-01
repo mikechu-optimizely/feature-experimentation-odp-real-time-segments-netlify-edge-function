@@ -1,14 +1,13 @@
 {
   "imports": {
-    "@optimizely/optimizely-sdk": "https://esm.sh/@optimizely/optimizely-sdk@6.0.0/dist/index.universal.es.min.js",
-    "json-schema": "https://esm.sh/json-schema@0.4.0"
+    "@optimizely/optimizely-sdk": "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0"
   },
   "tasks": {
     "test": "deno test",
     "test:unit": "deno test *.test.ts",
     "test:integration": "deno run --allow-net integration.test.ts",
-    "dev": "deno run --allow-net server.ts",
-    "start": "deno run --allow-net server.ts"
+    "dev": "deno run --allow-net --allow-import server.ts",
+    "start": "deno run --allow-net --allow-import server.ts"
   },
   "test": {
     "include": ["**/*.test.ts"],
