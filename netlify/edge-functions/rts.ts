@@ -77,11 +77,12 @@ export default async (request: Request, context: any): Promise<Response> => {
           }
         }
       );
-    }
+    } 
 
     // Get SDK key from environment or request body
-    const sdkKey = body.sdkKey || Deno.env.get('OPTIMIZELY_SDK_KEY');
+    const sdkKey = Deno.env.get('OPTIMIZELY_SDK_KEY');
     if (!sdkKey) {
+      console.error('OPTIMIZELY_SDK_KEY not found in environment variables');
       return new Response(
         JSON.stringify({
           success: false,
@@ -125,7 +126,7 @@ export default async (request: Request, context: any): Promise<Response> => {
     // If a flag key is provided, also test flag evaluation
     if (body.flagKey) {
       try {
-        const flagResult = optimizelyClient.decide(body.userId, body.flagKey, body.attributes || {});
+        const flagResult = optimizelyClient.decide(body.flagKey);
         response.metadata!.flagKey = body.flagKey;
         response.metadata!.flagResult = {
           variationKey: flagResult.variationKey,
