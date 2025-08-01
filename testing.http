@@ -1,0 +1,37 @@
+## For use with VS Code's REST Client extension
+## https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+### Test Hello Function
+GET http://localhost:8000/api/hello
+
+###
+
+### Test RTS Function (Local)
+POST http://localhost:8000/api/rts
+Content-Type: application/json
+
+{
+    "userId": "test-user-123",
+    "attributes": {
+        "age": 25,
+        "location": "US"
+    },
+    "sdkKey": "your-sdk-key-here",
+    "flagKey": "test-flag"
+}
+
+###
+
+### Test RTS Function (Production Netlify)
+POST https://optimizely-fx-rts-at-netlify.netlify.app/api/rts
+Content-Type: application/json
+
+{
+    "userId": "test-user-123",
+    "attributes": {
+        "age": 25,
+        "location": "US"
+    },
+    "sdkKey": "your-sdk-key-here",
+    "flagKey": "test-flag"
+}
