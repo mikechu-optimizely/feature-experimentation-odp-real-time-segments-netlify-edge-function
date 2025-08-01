@@ -145,10 +145,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       await optimizelyClient.onReady({ timeout: 15_000 }); // 15 second timeout
       console.info('✅ SDK is ready!');
     } catch (readyError) {
-      console.error('❌ Optimizely SDK failed to initialize:', readyError);
-      // Try to get more specific error information
-      const isValid = optimizelyClient.isValid();
-      console.debug('🔍 SDK isValid:', isValid);
+      console.error('❌ Optimizely SDK failed to initialize:', readyError); 
       throw new Error(`Failed to initialize Optimizely SDK: ${readyError.message}. SDK valid: ${isValid}`);
     }
 
@@ -181,8 +178,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       metadata: {
         userId: body.userId,
         attributes: body.attributes || {},
-        timestamp: new Date().toISOString(),
-        sdkVersion: '6.0.0'
+        timestamp: new Date().toISOString()
       }
     };
 
