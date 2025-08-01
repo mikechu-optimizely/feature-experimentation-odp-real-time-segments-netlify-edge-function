@@ -16,8 +16,7 @@ Content-Type: application/json
         "age": 25,
         "location": "US"
     },
-    "sdkKey": "your-sdk-key-here",
-    "flagKey": "test-flag"
+    "flagKey": "over_21_message"
 }
 
 ###
@@ -32,6 +31,5 @@ Content-Type: application/json
         "age": 25,
         "location": "US"
     },
-    "sdkKey": "your-sdk-key-here",
-    "flagKey": "test-flag"
+    "flagKey": "over_21_message"
 }
