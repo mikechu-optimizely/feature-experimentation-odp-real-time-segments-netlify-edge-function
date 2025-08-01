@@ -1,7 +1,4 @@
 {
-  "imports": {
-    "@optimizely/optimizely-sdk": "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0"
-  },
   "tasks": {
     "test": "deno test",
     "test:unit": "deno test *.test.ts",

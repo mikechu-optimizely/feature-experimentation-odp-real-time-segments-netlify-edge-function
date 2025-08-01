@@ -1,4 +1,4 @@
-import { createInstance } from '@optimizely/optimizely-sdk';
+import { createInstance } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0";
 
 declare const Deno: any;
 
