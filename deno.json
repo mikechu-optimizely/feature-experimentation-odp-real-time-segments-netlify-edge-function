@@ -1,10 +1,10 @@
 {
   "tasks": {
-    "test": "deno test",
-    "test:unit": "deno test *.test.ts",
-    "test:integration": "deno run --allow-net integration.test.ts",
-    "dev": "deno run --allow-net --allow-import server.ts",
-    "start": "deno run --allow-net --allow-import server.ts"
+    "test": "deno test --env-file --allow-env --allow-read",
+    "test:unit": "deno test *.test.ts --env-file --allow-env --allow-read",
+    "test:integration": "deno run --allow-net --env-file --allow-env --allow-read integration.test.ts",
+    "dev": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts",
+    "start": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts"
   },
   "test": {
     "include": ["**/*.test.ts"],
