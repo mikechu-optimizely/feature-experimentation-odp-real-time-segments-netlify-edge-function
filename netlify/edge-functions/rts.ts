@@ -1,4 +1,8 @@
-import { createInstance } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0";
+import {
+  createBatchEventProcessor,
+  createInstance,
+  createPollingProjectConfigManager,
+} from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0";
 
 declare const Deno: any;
 
@@ -13,7 +17,6 @@ interface RTSTestMetadata {
   userId: string;
   attributes: Record<string, any>;
   timestamp: string;
-  sdkVersion: string;
   flagKey?: string;
   flagResult?: {
     variationKey: string;
@@ -30,6 +33,9 @@ interface RTSTestResponse {
 }
 
 export default async (request: Request, context: any): Promise<Response> => {
+  // Variables to track parsed request data
+  let parsedBody: RTSTestRequest | null = null;
+
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -60,7 +66,28 @@ export default async (request: Request, context: any): Promise<Response> => {
       );
     }
 
-    const body: RTSTestRequest = await request.json();
+    // Parse request body with error handling
+    let body: RTSTestRequest;
+    try {
+      body = await request.json();
+      parsedBody = body; // Store for error handling
+      console.debug('📝 Request body parsed successfully:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to parse request body: ${parseError.message}`
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        }
+      );
+    }
 
     // Validate required fields
     if (!body.userId) {
@@ -77,12 +104,14 @@ export default async (request: Request, context: any): Promise<Response> => {
           }
         }
       );
-    } 
+    }
 
     // Get SDK key from environment or request body
     const sdkKey = Deno.env.get('OPTIMIZELY_SDK_KEY');
+    console.debug('🔑 SDK Key check - exists:', !!sdkKey, 'length:', sdkKey?.length || 0);
+
     if (!sdkKey) {
-      console.error('OPTIMIZELY_SDK_KEY not found in environment variables');
+    console.error('🚫 OPTIMIZELY_SDK_KEY not found in environment variables');
       return new Response(
         JSON.stringify({
           success: false,
@@ -98,19 +127,53 @@ export default async (request: Request, context: any): Promise<Response> => {
       );
     }
 
-    // Configure Optimizely client with RTS-friendly settings
-    const optimizelyClient = createInstance({
-      sdkKey: sdkKey,
+    const pollingConfigManager = createPollingProjectConfigManager({
+      sdkKey,
+      autoUpdate: true,
+      updateInterval: 60_000, // 1 minute
     });
 
-    // Wait for SDK to be ready
-    await optimizelyClient.onReady();
+    const batchEventProcessor = createBatchEventProcessor();
+
+    const optimizelyClient = createInstance({
+      projectConfigManager: pollingConfigManager,
+      eventProcessor: batchEventProcessor,
+    });
+
+    // Wait for SDK to be ready with timeout
+    try {
+      await optimizelyClient.onReady({ timeout: 15_000 }); // 15 second timeout
+      console.info('✅ SDK is ready!');
+    } catch (readyError) {
+      console.error('❌ Optimizely SDK failed to initialize:', readyError);
+      // Try to get more specific error information
+      const isValid = optimizelyClient.isValid();
+      console.debug('🔍 SDK isValid:', isValid);
+      throw new Error(`Failed to initialize Optimizely SDK: ${readyError.message}. SDK valid: ${isValid}`);
+    }
 
     // Create user context
-    const userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
+    let userContext;
+    try {
+      userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
+      if (!userContext) {
+        throw new Error('Failed to create user context');
+      }
+    } catch (contextError) {
+      console.error('👤 Failed to create user context:', contextError);
+      throw new Error(`Failed to create user context: ${contextError.message}`);
+    }
 
     // Test fetchQualifiedSegments
-    const qualifiedSegments = await userContext.fetchQualifiedSegments();
+    let qualifiedSegments = [];
+    try {
+      qualifiedSegments = await userContext.fetchQualifiedSegments();
+      console.info(`🏷️ Qualified segments fetched successfully: ${qualifiedSegments?.length || 0}`);
+    } catch (segmentsError) {
+      console.warn('⚠️ Failed to fetch qualified segments:', segmentsError);
+      // Don't throw here, just log the error and continue with empty segments
+      qualifiedSegments = [];
+    }
 
     const response: RTSTestResponse = {
       success: true,
@@ -126,15 +189,15 @@ export default async (request: Request, context: any): Promise<Response> => {
     // If a flag key is provided, also test flag evaluation
     if (body.flagKey) {
       try {
-        const flagResult = optimizelyClient.decide(body.flagKey);
+        const flagResult = userContext.decide(body.flagKey);
         response.metadata!.flagKey = body.flagKey;
         response.metadata!.flagResult = {
-          variationKey: flagResult.variationKey,
-          enabled: flagResult.enabled,
-          reasons: flagResult.reasons
+          variationKey: flagResult.variationKey || 'null',
+          enabled: flagResult.enabled || false,
+          reasons: flagResult.reasons || []
         };
       } catch (flagError) {
-        console.warn('Flag evaluation failed:', flagError);
+        console.warn('🚩 Flag evaluation failed:', flagError);
       }
     }
 
@@ -152,16 +215,15 @@ export default async (request: Request, context: any): Promise<Response> => {
     );
 
   } catch (error) {
-    console.error('RTS Test Error:', error);
+    console.error('💥 RTS Test Error:', error);
 
     const errorResponse: RTSTestResponse = {
       success: false,
       error: error.message || 'Unknown error occurred',
       metadata: {
-        userId: 'unknown',
-        attributes: {},
+        userId: parsedBody?.userId || 'unknown',
+        attributes: parsedBody?.attributes || {},
         timestamp: new Date().toISOString(),
-        sdkVersion: '6.0.0'
       }
     };
 
@@ -177,3 +239,7 @@ export default async (request: Request, context: any): Promise<Response> => {
     );
   }
 };
+function createPollingProjectConfigManager(arg0: { sdkKey: any; autoUpdate: boolean; updateInterval: number; }) {
+  throw new Error('Function not implemented.');
+}
+
