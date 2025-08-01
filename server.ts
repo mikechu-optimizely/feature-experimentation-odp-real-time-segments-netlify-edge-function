@@ -19,7 +19,7 @@ const handler = async (request: Request): Promise<Response> => {
     return await helloFunction(request, context);
   }
   
-  if (url.pathname === "/api/rts-test") {
+  if (url.pathname === "/api/rts") {
     // Mock Netlify context for RTS test
     const context = {
       site: { id: "test-site" },
