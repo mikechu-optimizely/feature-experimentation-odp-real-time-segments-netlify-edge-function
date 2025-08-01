@@ -1,0 +1,9 @@
+[build]
+  edge_functions = "netlify/edge-functions"
+
+[dev]
+  edge_functions = "netlify/edge-functions"
+
+[[edge_functions]]
+  function = "hello"
+  path = "/api/hello"
