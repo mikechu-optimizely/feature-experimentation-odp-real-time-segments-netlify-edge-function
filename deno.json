@@ -1,4 +1,8 @@
 {
+  "imports": {
+    "@optimizely/optimizely-sdk": "https://esm.sh/@optimizely/optimizely-sdk@6.0.0/dist/index.universal.es.min.js",
+    "json-schema": "https://esm.sh/json-schema@0.4.0"
+  },
   "tasks": {
     "test": "deno test",
     "test:unit": "deno test *.test.ts",

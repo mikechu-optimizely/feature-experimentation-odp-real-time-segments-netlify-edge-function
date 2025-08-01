@@ -1,6 +1,4 @@
-// Test function for Optimizely SDK v6.0.0 Universal Bundle with RTS
-// @ts-ignore - External module from esm.sh
-import { createInstance } from 'https://esm.sh/@optimizely/optimizely-sdk@6.0.0/dist/index.universal.es.min.js';
+import { createInstance } from '@optimizely/optimizely-sdk';
 
 declare const Deno: any;
 
@@ -48,11 +46,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     // Only handle POST requests
     if (request.method !== 'POST') {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Method not allowed. Use POST.' 
+        JSON.stringify({
+          success: false,
+          error: 'Method not allowed. Use POST.'
         }),
-        { 
+        {
           status: 405,
           headers: {
             "Content-Type": "application/json",
@@ -63,15 +61,15 @@ export default async (request: Request, context: any): Promise<Response> => {
     }
 
     const body: RTSTestRequest = await request.json();
-    
+
     // Validate required fields
     if (!body.userId) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'userId is required' 
+        JSON.stringify({
+          success: false,
+          error: 'userId is required'
         }),
-        { 
+        {
           status: 400,
           headers: {
             "Content-Type": "application/json",
@@ -85,11 +83,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     const sdkKey = body.sdkKey || Deno.env.get('OPTIMIZELY_SDK_KEY');
     if (!sdkKey) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'SDK key is required (set OPTIMIZELY_SDK_KEY env var or include in request body)' 
+        JSON.stringify({
+          success: false,
+          error: 'SDK key is required (set OPTIMIZELY_SDK_KEY env var or include in request body)'
         }),
-        { 
+        {
           status: 400,
           headers: {
             "Content-Type": "application/json",
@@ -102,38 +100,16 @@ export default async (request: Request, context: any): Promise<Response> => {
     // Configure Optimizely client with RTS-friendly settings
     const optimizelyClient = createInstance({
       sdkKey: sdkKey,
-      // Configure for RTS - use eventBatchSize 1 as mentioned in the chat
-      eventBatchSize: 1,
-      // Add requestHandler implementation for Deno environment
-      requestHandler: {
-        makeRequest: async (url: string, options: any) => {
-          try {
-            const response = await fetch(url, {
-              method: options.method || 'GET',
-              headers: options.headers || {},
-              body: options.body
-            });
-            
-            return {
-              statusCode: response.status,
-              body: await response.text(),
-              headers: Object.fromEntries(response.headers.entries())
-            };
-          } catch (error) {
-            throw new Error(`Request failed: ${error.message}`);
-          }
-        }
-      }
     });
 
     // Wait for SDK to be ready
     await optimizelyClient.onReady();
 
+    // Create user context
+    const userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
+
     // Test fetchQualifiedSegments
-    const qualifiedSegments = await optimizelyClient.fetchQualifiedSegments(
-      body.userId,
-      body.attributes || {}
-    );
+    const qualifiedSegments = await userContext.fetchQualifiedSegments();
 
     const response: RTSTestResponse = {
       success: true,
@@ -176,7 +152,7 @@ export default async (request: Request, context: any): Promise<Response> => {
 
   } catch (error) {
     console.error('RTS Test Error:', error);
-    
+
     const errorResponse: RTSTestResponse = {
       success: false,
       error: error.message || 'Unknown error occurred',
