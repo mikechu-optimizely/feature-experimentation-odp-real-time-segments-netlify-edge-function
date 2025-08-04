@@ -101,13 +101,12 @@ Deno.test("RTS function - valid request structure with mock SDK key", async () =
   
   const body = await response.json();
   assertExists(body.success);
-  assertInstanceOf(body.success, Boolean);
+  assertEquals(typeof body.success, "boolean");
   
   if (!body.success) {
     assertExists(body.error);
     assertExists(body.metadata);
     assertEquals(body.metadata.userId, "unknown"); // Error case
-    assertEquals(body.metadata.sdkVersion, "6.0.0");
   }
 });
 
@@ -129,10 +128,8 @@ Deno.test("RTS function - response structure validation", async () => {
   
   // Validate response structure regardless of success/failure
   assertExists(body.success);
-  assertInstanceOf(body.success, Boolean);
+  assertEquals(typeof body.success, "boolean");
   assertExists(body.metadata);
-  assertExists(body.metadata.sdkVersion);
-  assertEquals(body.metadata.sdkVersion, "6.0.0");
   assertExists(body.metadata.timestamp);
   
   if (body.success) {

@@ -77,7 +77,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Failed to parse request body: ${parseError.message}`
+          error: `Failed to parse request body: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`
         }),
         {
           status: 400,
@@ -146,7 +146,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       console.info('✅ SDK is ready!');
     } catch (readyError) {
       console.error('❌ Optimizely SDK failed to initialize:', readyError); 
-      throw new Error(`Failed to initialize Optimizely SDK: ${readyError.message}. SDK valid: ${isValid}`);
+      throw new Error(`Failed to initialize Optimizely SDK: ${readyError instanceof Error ? readyError.message : 'Unknown initialization error'}`);
     }
 
     // Create user context
@@ -158,7 +158,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       }
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
-      throw new Error(`Failed to create user context: ${contextError.message}`);
+      throw new Error(`Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`);
     }
 
     // Test fetchQualifiedSegments
@@ -215,11 +215,11 @@ export default async (request: Request, context: any): Promise<Response> => {
 
     const errorResponse: RTSTestResponse = {
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       metadata: {
         userId: parsedBody?.userId || 'unknown',
         attributes: parsedBody?.attributes || {},
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       }
     };
 
@@ -235,7 +235,4 @@ export default async (request: Request, context: any): Promise<Response> => {
     );
   }
 };
-function createPollingProjectConfigManager(arg0: { sdkKey: any; autoUpdate: boolean; updateInterval: number; }) {
-  throw new Error('Function not implemented.');
-}
 
