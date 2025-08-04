@@ -1,0 +1,10 @@
+{
+  "deno.codeLens.test": true,
+  "deno.codeLens.testArgs": [
+    "--allow-all",
+    "--no-check",
+    "--allow-import"
+  ],
+  "deno.enable": true,
+  "editor.hover.enabled": true
+}
