@@ -2,7 +2,7 @@ import {
   createBatchEventProcessor,
   createInstance,
   createPollingProjectConfigManager,
-} from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0";
+} from "@optimizely/optimizely-sdk";
 
 declare const Deno: any;
 
@@ -111,7 +111,7 @@ export default async (request: Request, context: any): Promise<Response> => {
     console.debug('🔑 SDK Key check - exists:', !!sdkKey, 'length:', sdkKey?.length || 0);
 
     if (!sdkKey) {
-    console.error('🚫 OPTIMIZELY_SDK_KEY not found in environment variables');
+      console.error('🚫 OPTIMIZELY_SDK_KEY not found in environment variables');
       return new Response(
         JSON.stringify({
           success: false,
@@ -145,7 +145,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       await optimizelyClient.onReady({ timeout: 15_000 }); // 15 second timeout
       console.info('✅ SDK is ready!');
     } catch (readyError) {
-      console.error('❌ Optimizely SDK failed to initialize:', readyError); 
+      console.error('❌ Optimizely SDK failed to initialize:', readyError);
       throw new Error(`Failed to initialize Optimizely SDK: ${readyError instanceof Error ? readyError.message : 'Unknown initialization error'}`);
     }
 
