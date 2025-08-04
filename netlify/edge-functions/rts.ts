@@ -36,6 +36,7 @@ interface RTSTestResponse {
 export default async (request: Request, context: any): Promise<Response> => {
   // Variables to track parsed request data
   let parsedBody: RTSTestRequest | null = null;
+  let optimizelyClient: any = null;
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
@@ -133,8 +134,6 @@ export default async (request: Request, context: any): Promise<Response> => {
       autoUpdate: true,
       requestHandler: {
         makeRequest: async (requestUrl: string, headers: Headers, method: HttpMethod, data?: string) => {
-          console.debug(`📡 Making request to Optimizely API: ${method} ${requestUrl}`);
-
           const response = await fetch(requestUrl, {
             method,
             headers,
@@ -146,7 +145,6 @@ export default async (request: Request, context: any): Promise<Response> => {
             return "{}";
           }
           const jsonData = await response.json();
-          console.debug(`✅ Request to ${requestUrl} succeeded with status ${response.status}`, jsonData);
           return jsonData;
         },
       },
@@ -173,6 +171,11 @@ export default async (request: Request, context: any): Promise<Response> => {
       console.info('✅ SDK is ready!');
     } catch (readyError) {
       console.error('❌ Optimizely SDK failed to initialize:', readyError);
+      try {
+        optimizelyClient.close();
+      } catch (closeError) {
+        console.warn('⚠️ Error closing Optimizely client:', closeError);
+      }
       return new Response(
         JSON.stringify({
           success: false,
@@ -193,6 +196,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     try {
       userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
       if (!userContext) {
+        try {
+          optimizelyClient.close();
+        } catch (closeError) {
+          console.warn('⚠️ Error closing Optimizely client:', closeError);
+        }
         return new Response(
           JSON.stringify({
             success: false,
@@ -208,6 +216,11 @@ export default async (request: Request, context: any): Promise<Response> => {
       }
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
+      try {
+        optimizelyClient.close();
+      } catch (closeError) {
+        console.warn('⚠️ Error closing Optimizely client:', closeError);
+      }
       return new Response(
         JSON.stringify({
           success: false,
@@ -259,6 +272,13 @@ export default async (request: Request, context: any): Promise<Response> => {
       }
     }
 
+    // Clean up the client after successful execution
+    try {
+      optimizelyClient.close();
+    } catch (closeError) {
+      console.warn('⚠️ Error closing Optimizely client:', closeError);
+    }
+
     return new Response(
       JSON.stringify(response, null, 2),
       {
@@ -274,6 +294,15 @@ export default async (request: Request, context: any): Promise<Response> => {
 
   } catch (error) {
     console.error('💥 RTS Test Error:', error);
+
+    // Clean up the client if it was created
+    if (optimizelyClient) {
+      try {
+        optimizelyClient.close();
+      } catch (closeError) {
+        console.warn('⚠️ Error closing Optimizely client:', closeError);
+      }
+    }
 
     const errorResponse: RTSTestResponse = {
       success: false,
