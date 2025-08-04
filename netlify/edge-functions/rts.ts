@@ -1,338 +1,107 @@
-import {
-  createBatchEventProcessor,
-  createInstance,
-  createPollingProjectConfigManager,
-} from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
-import { MapEventStore } from "../../src/MapEventStore.ts";
-
-declare const Deno: any;
-
-interface RTSTestRequest {
-  userId: string;
-  attributes?: Record<string, any>;
-  sdkKey?: string;
-  flagKey?: string;
-}
-
-interface RTSTestMetadata {
-  userId: string;
-  attributes: Record<string, any>;
-  timestamp: string;
-  flagKey?: string;
-  flagResult?: {
-    variationKey: string;
-    enabled: boolean;
-    reasons: string[];
-  };
-}
-
-interface RTSTestResponse {
-  success: boolean;
-  qualifiedSegments?: string[];
-  error?: string;
-  metadata?: RTSTestMetadata;
-}
+import { RTSTestRequest, RTSTestResponse } from "../../src/types.ts";
+import { OptimizelyClientManager } from "../../src/OptimizelyClient.ts";
+import { ResponseHelper } from "../../src/ResponseHelper.ts";
+import { RequestValidator } from "../../src/RequestValidator.ts";
+import { RTSService } from "../../src/RTSService.ts";
 
 export default async (request: Request, context: any): Promise<Response> => {
   // Variables to track parsed request data
   let parsedBody: RTSTestRequest | null = null;
-  let optimizelyClient: any = null;
+  const clientManager = new OptimizelyClientManager();
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
-      }
-    });
+    return ResponseHelper.createCorsResponse();
   }
 
   try {
     // Only handle POST requests
     if (request.method !== 'POST') {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Method not allowed. Use POST.'
-        }),
-        {
-          status: 405,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
-      );
+      return ResponseHelper.createMethodNotAllowedResponse();
     }
 
-    // Parse request body with error handling
-    let body: RTSTestRequest;
+    // Parse and validate request
     try {
-      body = await request.json();
-      parsedBody = body; // Store for error handling
-      console.debug('📝 Request body parsed successfully:', JSON.stringify(body, null, 2));
-    } catch (parseError) {
-      console.error('❌ Failed to parse request body:', parseError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Failed to parse request body: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
+      parsedBody = await RequestValidator.parseAndValidate(request);
+    } catch (validationError) {
+      return ResponseHelper.createValidationErrorResponse(
+        validationError instanceof Error ? validationError.message : 'Validation failed'
       );
     }
 
-    // Validate required fields
-    if (!body.userId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'userId is required'
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
-      );
-    }
-
-    // Get SDK key from environment or request body
-    const sdkKey = Deno.env.get('OPTIMIZELY_SDK_KEY');
-    console.debug('🔑 SDK Key check - exists:', !!sdkKey, 'length:', sdkKey?.length || 0);
-
-    if (!sdkKey) {
-      console.error('🚫 OPTIMIZELY_SDK_KEY not found in environment variables');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'SDK key is required (set OPTIMIZELY_SDK_KEY env var or include in request body)'
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
-      );
-    }
-
-    const pollingConfigManager = createPollingProjectConfigManager({
-      sdkKey,
-      requestHandler: {
-        makeRequest: async (requestUrl: string, headers: Headers, method: HttpMethod, data?: string) => {
-          const response = await fetch(requestUrl, {
-            method,
-            headers,
-            body: data,
-          });
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Request to ${requestUrl} failed with status ${response.status}: ${errorText}`);
-            return "{}";
-          }
-          const jsonData = await response.json();
-          // console.debug(`✅ Request to ${requestUrl} succeeded with status ${response.status}`, jsonData);
-          return jsonData;
-        },
-      },
-      updateInterval: 60_000, // 1 minute
-    });
-
-    const batchEventProcessor = createBatchEventProcessor({
-      eventStore: new MapEventStore(),
-      eventDispatcher: {
-        dispatchEvent: async (event: any) => {
-          console.debug('📤 Sending event to Optimizely:', event);
-        },
-      },
-    });
-
-    const optimizelyClient = createInstance({
-      projectConfigManager: pollingConfigManager,
-      eventProcessor: batchEventProcessor,
-      disposable: true, // Enable auto-disposal for edge environment
-    });
-
-    // Wait for SDK to be ready with timeout
+    // Validate SDK key
+    let sdkKey: string;
     try {
-      await optimizelyClient.onReady({ timeout: 5_000 });
-      console.info('✅ SDK is ready!');
-    } catch (readyError) {
-      console.error('❌ Optimizely SDK failed to initialize:', readyError);
-      try {
-        if (optimizelyClient && typeof optimizelyClient.close === 'function') {
-          optimizelyClient.close();
-        }
-      } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client during initialization error:', closeError);
-      }
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Failed to initialize Optimizely SDK: ${readyError instanceof Error ? readyError.message : 'Unknown initialization error'}`
-        }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
+      sdkKey = RequestValidator.validateSdkKey();
+    } catch (sdkError) {
+      return ResponseHelper.createValidationErrorResponse(
+        sdkError instanceof Error ? sdkError.message : 'SDK key validation failed'
+      );
+    }
+
+    // Initialize Optimizely client
+    let optimizelyClient: any;
+    try {
+      optimizelyClient = await clientManager.initialize({ sdkKey });
+    } catch (initError) {
+      console.error('❌ Optimizely SDK failed to initialize:', initError);
+      return ResponseHelper.createErrorResponse(
+        `Failed to initialize Optimizely SDK: ${initError instanceof Error ? initError.message : 'Unknown initialization error'}`
       );
     }
 
     // Create user context
     let userContext;
     try {
-      userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
+      userContext = optimizelyClient.createUserContext(parsedBody.userId, parsedBody.attributes || {});
       if (!userContext) {
-        try {
-          if (optimizelyClient && typeof optimizelyClient.close === 'function') {
-            optimizelyClient.close();
-          }
-        } catch (closeError) {
-          console.warn('⚠️ Error closing Optimizely client during context creation error:', closeError);
-        }
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Failed to create user context'
-          }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
+        clientManager.close();
+        return ResponseHelper.createErrorResponse('Failed to create user context');
       }
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
-      try {
-        if (optimizelyClient && typeof optimizelyClient.close === 'function') {
-          optimizelyClient.close();
-        }
-      } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client during context error:', closeError);
-      }
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`
-        }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
-        }
+      clientManager.close();
+      return ResponseHelper.createErrorResponse(
+        `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`
       );
     }
 
-    // Test fetchQualifiedSegments
-    let qualifiedSegments = [];
+    // Process user segments and flags
     try {
-      qualifiedSegments = await userContext.fetchQualifiedSegments();
-      console.info(`🏷️ Qualified segments fetched successfully: ${qualifiedSegments?.length || 0}`);
-    } catch (segmentsError) {
-      console.warn('⚠️ Failed to fetch qualified segments:', segmentsError);
-      // Don't throw here, just log the error and continue with empty segments
-      qualifiedSegments = [];
+      const { qualifiedSegments, metadata } = await RTSService.processUserSegments(userContext, parsedBody);
+      
+      // Clean up the client after successful execution
+      clientManager.close();
+
+      return ResponseHelper.createSuccessResponse({
+        qualifiedSegments,
+        metadata
+      });
+    } catch (serviceError) {
+      console.error('� Service processing failed:', serviceError);
+      clientManager.close();
+      return ResponseHelper.createErrorResponse(
+        `Service processing failed: ${serviceError instanceof Error ? serviceError.message : 'Unknown service error'}`
+      );
     }
-
-    const response: RTSTestResponse = {
-      success: true,
-      qualifiedSegments: qualifiedSegments || [],
-      metadata: {
-        userId: body.userId,
-        attributes: body.attributes || {},
-        timestamp: new Date().toISOString()
-      }
-    };
-
-    // If a flag key is provided, also test flag evaluation
-    if (body.flagKey) {
-      try {
-        const flagResult = userContext.decide(body.flagKey);
-        response.metadata!.flagKey = body.flagKey;
-        response.metadata!.flagResult = {
-          variationKey: flagResult.variationKey || 'null',
-          enabled: flagResult.enabled || false,
-          reasons: flagResult.reasons || []
-        };
-      } catch (flagError) {
-        console.warn('🚩 Flag evaluation failed:', flagError);
-      }
-    }
-
-    // Clean up the client after successful execution
-    try {
-      if (optimizelyClient && typeof optimizelyClient.close === 'function') {
-        optimizelyClient.close();
-      }
-    } catch (closeError) {
-      console.warn('⚠️ Error closing Optimizely client after success:', closeError);
-    }
-
-    return new Response(
-      JSON.stringify(response, null, 2),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "Content-Type",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
-        }
-      }
-    );
 
   } catch (error) {
     console.error('💥 RTS Test Error:', error);
 
     // Clean up the client if it was created
-    if (optimizelyClient) {
-      try {
-        if (typeof optimizelyClient.close === 'function') {
-          optimizelyClient.close();
-        }
-      } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client during final error handling:', closeError);
-      }
-    }
+    clientManager.close();
 
-    const errorResponse: RTSTestResponse = {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      metadata: {
-        userId: parsedBody?.userId || 'unknown',
-        attributes: parsedBody?.attributes || {},
+    return ResponseHelper.createErrorResponse(
+      error instanceof Error ? error.message : 'Unknown error occurred',
+      500,
+      parsedBody ? {
+        userId: parsedBody.userId,
+        attributes: parsedBody.attributes || {},
         timestamp: new Date().toISOString()
-      }
-    };
-
-    return new Response(
-      JSON.stringify(errorResponse, null, 2),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
+      } : {
+        userId: 'unknown',
+        attributes: {},
+        timestamp: new Date().toISOString()
       }
     );
   }
