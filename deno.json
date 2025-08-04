@@ -7,7 +7,7 @@
     "start": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts"
   },
   "imports": {
-    "@optimizely/optimizely-sdk": "npm:@optimizely/optimizely-sdk@6.0.0"
+    "@optimizely/optimizely-sdk": "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal"
   },
   "test": {
     "include": ["**/*.test.ts"],

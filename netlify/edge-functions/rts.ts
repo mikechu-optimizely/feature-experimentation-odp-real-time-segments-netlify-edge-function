@@ -3,6 +3,7 @@ import {
   createInstance,
   createPollingProjectConfigManager,
 } from "@optimizely/optimizely-sdk";
+import { MapEventStore } from "./MapEventStore.ts";
 
 declare const Deno: any;
 
@@ -130,10 +131,36 @@ export default async (request: Request, context: any): Promise<Response> => {
     const pollingConfigManager = createPollingProjectConfigManager({
       sdkKey,
       autoUpdate: true,
+      requestHandler: {
+        makeRequest: async (requestUrl: string, headers: Headers, method: HttpMethod, data?: string) => {
+          console.debug(`📡 Making request to Optimizely API: ${method} ${requestUrl}`);
+
+          const response = await fetch(requestUrl, {
+            method,
+            headers,
+            body: data,
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Request to ${requestUrl} failed with status ${response.status}: ${errorText}`);
+            throw new Error(`Request failed with status ${response.status}: ${errorText}`);
+          }
+          const jsonData = await response.json();
+          console.debug(`✅ Request to ${requestUrl} succeeded with status ${response.status}`, jsonData);
+          return jsonData;
+        },
+      },
       updateInterval: 60_000, // 1 minute
     });
 
-    const batchEventProcessor = createBatchEventProcessor();
+    const batchEventProcessor = createBatchEventProcessor({      
+      eventStore: new MapEventStore(),
+      eventDispatcher: {
+        dispatchEvent: async (event: any) => {
+          console.debug('📤 Sending event to Optimizely:', event);
+        },
+      },
+    });
 
     const optimizelyClient = createInstance({
       projectConfigManager: pollingConfigManager,
@@ -142,7 +169,7 @@ export default async (request: Request, context: any): Promise<Response> => {
 
     // Wait for SDK to be ready with timeout
     try {
-      await optimizelyClient.onReady({ timeout: 15_000 }); // 15 second timeout
+      await optimizelyClient.onReady({ timeout: 5_000 });
       console.info('✅ SDK is ready!');
     } catch (readyError) {
       console.error('❌ Optimizely SDK failed to initialize:', readyError);
