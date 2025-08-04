@@ -2,7 +2,7 @@ import {
   createBatchEventProcessor,
   createInstance,
   createPollingProjectConfigManager,
-} from "@optimizely/optimizely-sdk";
+} from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 import { MapEventStore } from "./MapEventStore.ts";
 
 declare const Deno: any;
