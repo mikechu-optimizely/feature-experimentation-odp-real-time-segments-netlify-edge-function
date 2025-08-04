@@ -131,7 +131,6 @@ export default async (request: Request, context: any): Promise<Response> => {
 
     const pollingConfigManager = createPollingProjectConfigManager({
       sdkKey,
-      autoUpdate: true,
       requestHandler: {
         makeRequest: async (requestUrl: string, headers: Headers, method: HttpMethod, data?: string) => {
           const response = await fetch(requestUrl, {
@@ -145,6 +144,7 @@ export default async (request: Request, context: any): Promise<Response> => {
             return "{}";
           }
           const jsonData = await response.json();
+          // console.debug(`✅ Request to ${requestUrl} succeeded with status ${response.status}`, jsonData);
           return jsonData;
         },
       },
@@ -163,6 +163,7 @@ export default async (request: Request, context: any): Promise<Response> => {
     const optimizelyClient = createInstance({
       projectConfigManager: pollingConfigManager,
       eventProcessor: batchEventProcessor,
+      disposable: true, // Enable auto-disposal for edge environment
     });
 
     // Wait for SDK to be ready with timeout
@@ -172,9 +173,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     } catch (readyError) {
       console.error('❌ Optimizely SDK failed to initialize:', readyError);
       try {
-        optimizelyClient.close();
+        if (optimizelyClient && typeof optimizelyClient.close === 'function') {
+          optimizelyClient.close();
+        }
       } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client:', closeError);
+        console.warn('⚠️ Error closing Optimizely client during initialization error:', closeError);
       }
       return new Response(
         JSON.stringify({
@@ -197,9 +200,11 @@ export default async (request: Request, context: any): Promise<Response> => {
       userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
       if (!userContext) {
         try {
-          optimizelyClient.close();
+          if (optimizelyClient && typeof optimizelyClient.close === 'function') {
+            optimizelyClient.close();
+          }
         } catch (closeError) {
-          console.warn('⚠️ Error closing Optimizely client:', closeError);
+          console.warn('⚠️ Error closing Optimizely client during context creation error:', closeError);
         }
         return new Response(
           JSON.stringify({
@@ -217,9 +222,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
       try {
-        optimizelyClient.close();
+        if (optimizelyClient && typeof optimizelyClient.close === 'function') {
+          optimizelyClient.close();
+        }
       } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client:', closeError);
+        console.warn('⚠️ Error closing Optimizely client during context error:', closeError);
       }
       return new Response(
         JSON.stringify({
@@ -274,9 +281,11 @@ export default async (request: Request, context: any): Promise<Response> => {
 
     // Clean up the client after successful execution
     try {
-      optimizelyClient.close();
+      if (optimizelyClient && typeof optimizelyClient.close === 'function') {
+        optimizelyClient.close();
+      }
     } catch (closeError) {
-      console.warn('⚠️ Error closing Optimizely client:', closeError);
+      console.warn('⚠️ Error closing Optimizely client after success:', closeError);
     }
 
     return new Response(
@@ -298,9 +307,11 @@ export default async (request: Request, context: any): Promise<Response> => {
     // Clean up the client if it was created
     if (optimizelyClient) {
       try {
-        optimizelyClient.close();
+        if (typeof optimizelyClient.close === 'function') {
+          optimizelyClient.close();
+        }
       } catch (closeError) {
-        console.warn('⚠️ Error closing Optimizely client:', closeError);
+        console.warn('⚠️ Error closing Optimizely client during final error handling:', closeError);
       }
     }
 
