@@ -3,7 +3,7 @@ import {
   createInstance,
   createPollingProjectConfigManager,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
-import { MapEventStore } from "./MapEventStore.ts";
+import { MapEventStore } from "../../src/MapEventStore.ts";
 
 declare const Deno: any;
 
