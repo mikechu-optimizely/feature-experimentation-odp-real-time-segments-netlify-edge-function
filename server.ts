@@ -34,6 +34,6 @@ const handler = async (request: Request): Promise<Response> => {
 
 console.log(`Server running on http://localhost:${port}`);
 console.log(`Test your hello function at: http://localhost:${port}/api/hello`);
-console.log(`Test your RTS function at: http://localhost:${port}/api/rts-test`);
+console.log(`Test your RTS function at: http://localhost:${port}/api/rts`);
 
 Deno.serve({ port }, handler);
