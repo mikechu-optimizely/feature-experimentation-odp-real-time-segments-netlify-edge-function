@@ -25,6 +25,7 @@ export class OptimizelyClientManager {
             method,
             headers,
             body: data,
+            signal: AbortSignal.timeout(5_000),
           });
           if (!response.ok) {
             const errorText = await response.text();
@@ -32,7 +33,7 @@ export class OptimizelyClientManager {
             return "{}";
           }
           const jsonData = await response.json();
-          console.debug(`📥 Fetched config from ${requestUrl}:`, JSON.stringify(jsonData, null, 2));
+          //console.debug(`📥 Fetched config from ${requestUrl}:`, JSON.stringify(jsonData, null, 2));
           return jsonData;
         },
       },
