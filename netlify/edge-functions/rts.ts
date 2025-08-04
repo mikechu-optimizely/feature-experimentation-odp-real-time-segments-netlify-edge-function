@@ -143,7 +143,7 @@ export default async (request: Request, context: any): Promise<Response> => {
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`❌ Request to ${requestUrl} failed with status ${response.status}: ${errorText}`);
-            throw new Error(`Request failed with status ${response.status}: ${errorText}`);
+            return "{}";
           }
           const jsonData = await response.json();
           console.debug(`✅ Request to ${requestUrl} succeeded with status ${response.status}`, jsonData);
@@ -153,7 +153,7 @@ export default async (request: Request, context: any): Promise<Response> => {
       updateInterval: 60_000, // 1 minute
     });
 
-    const batchEventProcessor = createBatchEventProcessor({      
+    const batchEventProcessor = createBatchEventProcessor({
       eventStore: new MapEventStore(),
       eventDispatcher: {
         dispatchEvent: async (event: any) => {
@@ -173,7 +173,19 @@ export default async (request: Request, context: any): Promise<Response> => {
       console.info('✅ SDK is ready!');
     } catch (readyError) {
       console.error('❌ Optimizely SDK failed to initialize:', readyError);
-      throw new Error(`Failed to initialize Optimizely SDK: ${readyError instanceof Error ? readyError.message : 'Unknown initialization error'}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to initialize Optimizely SDK: ${readyError instanceof Error ? readyError.message : 'Unknown initialization error'}`
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        }
+      );
     }
 
     // Create user context
@@ -181,11 +193,34 @@ export default async (request: Request, context: any): Promise<Response> => {
     try {
       userContext = optimizelyClient.createUserContext(body.userId, body.attributes || {});
       if (!userContext) {
-        throw new Error('Failed to create user context');
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to create user context'
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }
+          });
       }
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
-      throw new Error(`Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        }
+      );
     }
 
     // Test fetchQualifiedSegments
