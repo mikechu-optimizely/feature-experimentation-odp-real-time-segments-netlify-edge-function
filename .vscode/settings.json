@@ -6,5 +6,8 @@
     "--allow-import"
   ],
   "deno.enable": true,
-  "editor.hover.enabled": true
+  "editor.hover.enabled": true,
+  "cSpell.words": [
+    "murmurhash"
+  ]
 }
