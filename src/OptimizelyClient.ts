@@ -89,8 +89,15 @@ export class OptimizelyClientManager {
     });
 
     // Wait for SDK to be ready with timeout
-    await this.client.onReady({ timeout: config.timeout || 5_000 });
-    console.info('✅ SDK is ready!');
+    const timeout = config.timeout || 2_000;    
+    try {
+      await this.client.onReady({ timeout });
+      console.info('✅ SDK is ready!');
+    } catch (error) {
+      // Ensure we close the client if initialization fails
+      this.close();
+      throw error;
+    }
 
     return this.client;
   }
@@ -100,12 +107,16 @@ export class OptimizelyClientManager {
   }
 
   close(): void {
-    if (this.client && typeof this.client.close === 'function') {
+    if (this.client) {
       try {
-        this.client.close();
+        if (typeof this.client.close === 'function') {
+          this.client.close();
+        }
+        this.client = null;
         console.debug('🔄 Optimizely client closed successfully');
       } catch (error) {
         console.warn('⚠️ Error closing Optimizely client:', error);
+        this.client = null; // Still null it out even if close failed
       }
     }
   }

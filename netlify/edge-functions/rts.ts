@@ -46,7 +46,13 @@ export default async (request: Request, context: any): Promise<Response> => {
     } catch (initError) {
       console.error('❌ Optimizely SDK failed to initialize:', initError);
       return ResponseHelper.createErrorResponse(
-        `Failed to initialize Optimizely SDK: ${initError instanceof Error ? initError.message : 'Unknown initialization error'}`
+        `Failed to initialize Optimizely SDK: ${initError instanceof Error ? initError.message : 'Unknown initialization error'}`,
+        500,
+        {
+          userId: parsedBody.userId,
+          attributes: parsedBody.attributes || {},
+          timestamp: new Date().toISOString()
+        }
       );
     }
 
@@ -56,13 +62,27 @@ export default async (request: Request, context: any): Promise<Response> => {
       userContext = optimizelyClient.createUserContext(parsedBody.userId, parsedBody.attributes || {});
       if (!userContext) {
         clientManager.close();
-        return ResponseHelper.createErrorResponse('Failed to create user context');
+        return ResponseHelper.createErrorResponse(
+          'Failed to create user context',
+          500,
+          {
+            userId: parsedBody.userId,
+            attributes: parsedBody.attributes || {},
+            timestamp: new Date().toISOString()
+          }
+        );
       }
     } catch (contextError) {
       console.error('👤 Failed to create user context:', contextError);
       clientManager.close();
       return ResponseHelper.createErrorResponse(
-        `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`
+        `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`,
+        500,
+        {
+          userId: parsedBody.userId,
+          attributes: parsedBody.attributes || {},
+          timestamp: new Date().toISOString()
+        }
       );
     }
 
@@ -78,10 +98,16 @@ export default async (request: Request, context: any): Promise<Response> => {
         metadata
       });
     } catch (serviceError) {
-      console.error('� Service processing failed:', serviceError);
+      console.error('🔧 Service processing failed:', serviceError);
       clientManager.close();
       return ResponseHelper.createErrorResponse(
-        `Service processing failed: ${serviceError instanceof Error ? serviceError.message : 'Unknown service error'}`
+        `Service processing failed: ${serviceError instanceof Error ? serviceError.message : 'Unknown service error'}`,
+        500,
+        {
+          userId: parsedBody.userId,
+          attributes: parsedBody.attributes || {},
+          timestamp: new Date().toISOString()
+        }
       );
     }
 
@@ -95,8 +121,8 @@ export default async (request: Request, context: any): Promise<Response> => {
       error instanceof Error ? error.message : 'Unknown error occurred',
       500,
       parsedBody ? {
-        userId: parsedBody.userId,
-        attributes: parsedBody.attributes || {},
+        userId: (parsedBody as RTSTestRequest).userId,
+        attributes: (parsedBody as RTSTestRequest).attributes || {},
         timestamp: new Date().toISOString()
       } : {
         userId: 'unknown',
