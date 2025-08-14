@@ -18,7 +18,16 @@ export class RTSService {
     // Test fetchQualifiedSegments
     let qualifiedSegments: string[] = [];
     try {
-      qualifiedSegments = await userContext.fetchQualifiedSegments();
+      const result = await userContext.fetchQualifiedSegments();
+
+      // Ensure we always have an array
+      if (Array.isArray(result)) {
+        qualifiedSegments = result;
+      } else {
+        console.warn("⚠️ fetchQualifiedSegments returned non-array:", result);
+        qualifiedSegments = [];
+      }
+
       console.info(
         `🏷️ Qualified segments fetched successfully: ${
           qualifiedSegments?.length || 0
@@ -51,6 +60,7 @@ export class RTSService {
       }
     }
 
-    return { qualifiedSegments, metadata };
+    const result = { qualifiedSegments, metadata };
+    return result;
   }
 }
