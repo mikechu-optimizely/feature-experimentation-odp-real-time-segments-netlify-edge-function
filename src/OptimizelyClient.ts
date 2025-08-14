@@ -1,11 +1,9 @@
 import {
-  createBatchEventProcessor,
+  createEventDispatcher,
   createInstance,
-  createPollingProjectConfigManager,
+  createStaticProjectConfigManager,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 import { MapEventStore } from "./MapEventStore.ts";
-
-declare const Deno: any;
 
 export interface OptimizelyClientConfig {
   sdkKey: string;
@@ -14,43 +12,24 @@ export interface OptimizelyClientConfig {
 }
 
 export class OptimizelyClientManager {
-  private client: any = null;
+  private client: ReturnType<typeof createInstance> | null = null;
 
-  async initialize(config: OptimizelyClientConfig): Promise<any> {
-    const pollingConfigManager = createPollingProjectConfigManager({
+  async initialize(config: OptimizelyClientConfig): Promise<unknown> {
+    const staticConfigManager = createStaticProjectConfigManager({
       sdkKey: config.sdkKey,
-      requestHandler: {
-        makeRequest: async (requestUrl: string, headers: Headers, method: any, data?: string) => {
-          const response = await fetch(requestUrl, {
-            method,
-            headers,
-            body: data,
-            signal: AbortSignal.timeout(5_000),
-          });
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Request to ${requestUrl} failed with status ${response.status}: ${errorText}`);
-            return "{}";
-          }
-          const jsonData = await response.json();
-          //console.debug(`📥 Fetched config from ${requestUrl}:`, JSON.stringify(jsonData, null, 2));
-          return jsonData;
-        },
-      },
-      updateInterval: config.updateInterval || 60_000, // 1 minute
     });
 
-    const batchEventProcessor = createBatchEventProcessor({
+    const batchEventProcessor = createEventDispatcher({
       eventStore: new MapEventStore(),
       eventDispatcher: {
-        dispatchEvent: async (event: any) => {
+        dispatchEvent: (event: unknown) => {
           console.debug('📤 Sending event to Optimizely:', event);
         },
       },
     });
 
     this.client = createInstance({
-      projectConfigManager: pollingConfigManager,
+      projectConfigManager: staticConfigManager,
       eventProcessor: batchEventProcessor,
       disposable: true, // Enable auto-disposal for edge environment
     });
@@ -62,7 +41,7 @@ export class OptimizelyClientManager {
     return this.client;
   }
 
-  getClient(): any {
+  getClient(): ReturnType<typeof createInstance> | null {
     return this.client;
   }
 
