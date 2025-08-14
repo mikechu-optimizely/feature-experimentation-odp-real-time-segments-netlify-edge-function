@@ -3,8 +3,18 @@
     "test": "deno test --env-file --allow-env --allow-read --allow-import",
     "test:unit": "deno test *.test.ts --env-file --allow-env --allow-read --allow-import",
     "test:integration": "deno run --allow-net --env-file --allow-env --allow-read integration.test.ts",
+    "test:watch": "deno test --env-file --allow-env --allow-read --allow-import --watch",
+    "test:coverage": "deno test --env-file --allow-env --allow-read --allow-import --coverage=coverage && deno coverage coverage --lcov --output=coverage.lcov",
+    "test:ci": "deno test --env-file --allow-env --allow-read --allow-import --coverage=coverage --reporter=junit --junit-path=./test-results.xml",
     "dev": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts",
-    "start": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts"
+    "start": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts",
+    "lint": "deno lint src/ netlify/",
+    "lint:fix": "deno lint --fix src/ netlify/",
+    "fmt": "deno fmt src/ netlify/ *.ts *.json",
+    "fmt:check": "deno fmt --check src/ netlify/ *.ts *.json",
+    "check": "deno check src/**/*.ts netlify/**/*.ts *.ts",
+    "precommit": "deno task fmt && deno task lint && deno task check && deno task test",
+    "ci": "deno task fmt:check && deno task lint && deno task check && deno task test:ci"
   },
   "test": {
     "include": ["**/*.test.ts"],
