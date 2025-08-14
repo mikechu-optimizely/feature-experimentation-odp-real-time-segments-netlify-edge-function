@@ -10,13 +10,13 @@ export default async (request: Request, context: any): Promise<Response> => {
   const clientManager = new OptimizelyClientManager();
 
   // Handle CORS preflight
-  if (request.method === 'OPTIONS') {
+  if (request.method === "OPTIONS") {
     return ResponseHelper.createCorsResponse();
   }
 
   try {
     // Only handle POST requests
-    if (request.method !== 'POST') {
+    if (request.method !== "POST") {
       return ResponseHelper.createMethodNotAllowedResponse();
     }
 
@@ -25,7 +25,9 @@ export default async (request: Request, context: any): Promise<Response> => {
       parsedBody = await RequestValidator.parseAndValidate(request);
     } catch (validationError) {
       return ResponseHelper.createValidationErrorResponse(
-        validationError instanceof Error ? validationError.message : 'Validation failed'
+        validationError instanceof Error
+          ? validationError.message
+          : "Validation failed",
       );
     }
 
@@ -35,7 +37,9 @@ export default async (request: Request, context: any): Promise<Response> => {
       sdkKey = RequestValidator.validateSdkKey();
     } catch (sdkError) {
       return ResponseHelper.createValidationErrorResponse(
-        sdkError instanceof Error ? sdkError.message : 'SDK key validation failed'
+        sdkError instanceof Error
+          ? sdkError.message
+          : "SDK key validation failed",
       );
     }
 
@@ -44,92 +48,108 @@ export default async (request: Request, context: any): Promise<Response> => {
     try {
       optimizelyClient = await clientManager.initialize({ sdkKey });
     } catch (initError) {
-      console.error('❌ Optimizely SDK failed to initialize:', initError);
+      console.error("❌ Optimizely SDK failed to initialize:", initError);
       return ResponseHelper.createErrorResponse(
-        `Failed to initialize Optimizely SDK: ${initError instanceof Error ? initError.message : 'Unknown initialization error'}`,
+        `Failed to initialize Optimizely SDK: ${
+          initError instanceof Error
+            ? initError.message
+            : "Unknown initialization error"
+        }`,
         500,
         {
           userId: parsedBody.userId,
           attributes: parsedBody.attributes || {},
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       );
     }
 
     // Create user context
     let userContext;
     try {
-      userContext = optimizelyClient.createUserContext(parsedBody.userId, parsedBody.attributes || {});
+      userContext = optimizelyClient.createUserContext(
+        parsedBody.userId,
+        parsedBody.attributes || {},
+      );
       if (!userContext) {
         clientManager.close();
         return ResponseHelper.createErrorResponse(
-          'Failed to create user context',
+          "Failed to create user context",
           500,
           {
             userId: parsedBody.userId,
             attributes: parsedBody.attributes || {},
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         );
       }
     } catch (contextError) {
-      console.error('👤 Failed to create user context:', contextError);
+      console.error("👤 Failed to create user context:", contextError);
       clientManager.close();
       return ResponseHelper.createErrorResponse(
-        `Failed to create user context: ${contextError instanceof Error ? contextError.message : 'Unknown context error'}`,
+        `Failed to create user context: ${
+          contextError instanceof Error
+            ? contextError.message
+            : "Unknown context error"
+        }`,
         500,
         {
           userId: parsedBody.userId,
           attributes: parsedBody.attributes || {},
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       );
     }
 
     // Process user segments and flags
     try {
-      const { qualifiedSegments, metadata } = await RTSService.processUserSegments(userContext, parsedBody);
-      
+      const { qualifiedSegments, metadata } = await RTSService
+        .processUserSegments(userContext, parsedBody);
+
       // Clean up the client after successful execution
       clientManager.close();
 
       return ResponseHelper.createSuccessResponse({
         qualifiedSegments,
-        metadata
+        metadata,
       });
     } catch (serviceError) {
-      console.error('🔧 Service processing failed:', serviceError);
+      console.error("🔧 Service processing failed:", serviceError);
       clientManager.close();
       return ResponseHelper.createErrorResponse(
-        `Service processing failed: ${serviceError instanceof Error ? serviceError.message : 'Unknown service error'}`,
+        `Service processing failed: ${
+          serviceError instanceof Error
+            ? serviceError.message
+            : "Unknown service error"
+        }`,
         500,
         {
           userId: parsedBody.userId,
           attributes: parsedBody.attributes || {},
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       );
     }
-
   } catch (error) {
-    console.error('💥 RTS Test Error:', error);
+    console.error("💥 RTS Test Error:", error);
 
     // Clean up the client if it was created
     clientManager.close();
 
     return ResponseHelper.createErrorResponse(
-      error instanceof Error ? error.message : 'Unknown error occurred',
+      error instanceof Error ? error.message : "Unknown error occurred",
       500,
-      parsedBody ? {
-        userId: (parsedBody as RTSTestRequest).userId,
-        attributes: (parsedBody as RTSTestRequest).attributes || {},
-        timestamp: new Date().toISOString()
-      } : {
-        userId: 'unknown',
-        attributes: {},
-        timestamp: new Date().toISOString()
-      }
+      parsedBody
+        ? {
+          userId: (parsedBody as RTSTestRequest).userId,
+          attributes: (parsedBody as RTSTestRequest).attributes || {},
+          timestamp: new Date().toISOString(),
+        }
+        : {
+          userId: "unknown",
+          attributes: {},
+          timestamp: new Date().toISOString(),
+        },
     );
   }
 };
-

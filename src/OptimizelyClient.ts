@@ -1,7 +1,7 @@
 import {
+  createForwardingEventProcessor,
   createInstance,
   createPollingProjectConfigManager,
-  createForwardingEventProcessor,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 
 export interface OptimizelyClientConfig {
@@ -21,25 +21,35 @@ interface AbortableRequest {
 }
 
 interface RequestHandler {
-  makeRequest(url: string, headers?: Record<string, string>, method?: string, data?: string): AbortableRequest;
+  makeRequest(
+    url: string,
+    headers?: Record<string, string>,
+    method?: string,
+    data?: string,
+  ): AbortableRequest;
 }
 
 class CustomRequestHandler implements RequestHandler {
-  makeRequest(url: string, headers: Record<string, string> = {}, method: string = 'GET', data?: string): AbortableRequest {
+  makeRequest(
+    url: string,
+    headers: Record<string, string> = {},
+    method: string = "GET",
+    data?: string,
+  ): AbortableRequest {
     const controller = new AbortController();
-    
+
     const requestOptions: RequestInit = {
       method,
       headers,
       signal: controller.signal,
     };
-    
-    if (data && (method === 'POST' || method === 'PUT')) {
+
+    if (data && (method === "POST" || method === "PUT")) {
       requestOptions.body = data;
     }
-    
+
     const responsePromise = fetch(url, requestOptions)
-      .then(async response => {
+      .then(async (response) => {
         const body = await response.text();
         return {
           statusCode: response.status,
@@ -47,13 +57,13 @@ class CustomRequestHandler implements RequestHandler {
           headers: Object.fromEntries(response.headers.entries()),
         };
       })
-      .catch(error => {
-        if (error.name === 'AbortError') {
-          throw new Error('Request aborted');
+      .catch((error) => {
+        if (error.name === "AbortError") {
+          throw new Error("Request aborted");
         }
         throw error;
       });
-    
+
     return {
       responsePromise,
       abort: () => controller.abort(),
@@ -64,7 +74,7 @@ class CustomRequestHandler implements RequestHandler {
 // Custom event dispatcher
 const customEventDispatcher = {
   dispatchEvent: (event: unknown) => {
-    console.debug('📤 Sending event to Optimizely:', event);
+    console.debug("📤 Sending event to Optimizely:", event);
     return Promise.resolve({});
   },
 };
@@ -79,7 +89,9 @@ export class OptimizelyClientManager {
     });
 
     // Create forwarding event processor with custom event dispatcher
-    const forwardingEventProcessor = createForwardingEventProcessor(customEventDispatcher);
+    const forwardingEventProcessor = createForwardingEventProcessor(
+      customEventDispatcher,
+    );
 
     this.client = createInstance({
       projectConfigManager: pollingConfigManager,
@@ -89,10 +101,10 @@ export class OptimizelyClientManager {
     });
 
     // Wait for SDK to be ready with timeout
-    const timeout = config.timeout || 2_000;    
+    const timeout = config.timeout || 2_000;
     try {
       await this.client.onReady({ timeout });
-      console.info('✅ SDK is ready!');
+      console.info("✅ SDK is ready!");
     } catch (error) {
       // Ensure we close the client if initialization fails
       this.close();
@@ -109,13 +121,13 @@ export class OptimizelyClientManager {
   close(): void {
     if (this.client) {
       try {
-        if (typeof this.client.close === 'function') {
+        if (typeof this.client.close === "function") {
           this.client.close();
         }
         this.client = null;
-        console.debug('🔄 Optimizely client closed successfully');
+        console.debug("🔄 Optimizely client closed successfully");
       } catch (error) {
-        console.warn('⚠️ Error closing Optimizely client:', error);
+        console.warn("⚠️ Error closing Optimizely client:", error);
         this.client = null; // Still null it out even if close failed
       }
     }

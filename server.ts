@@ -8,17 +8,17 @@ const port = 8000;
 
 const handler = async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
-  
+
   if (url.pathname === "/api/rts") {
     // Mock Netlify context for RTS test
     const context = {
       site: { id: "test-site" },
-      deploy: { id: "test-deploy" }
+      deploy: { id: "test-deploy" },
     };
-    
+
     return await rtsTestFunction(request, context);
   }
-  
+
   return new Response("Not Found", { status: 404 });
 };
 

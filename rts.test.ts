@@ -1,6 +1,10 @@
 // Unit tests for RTS edge function
 // @ts-ignore - External modules
-import { assertEquals, assertExists, assertInstanceOf } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import {
+  assertEquals,
+  assertExists,
+  assertInstanceOf,
+} from "https://deno.land/std@0.208.0/assert/mod.ts";
 import rtsFunction from "./netlify/edge-functions/rts.ts";
 
 declare const Deno: any;
@@ -10,7 +14,7 @@ const RTS_URL = "http://localhost:8000/api/rts";
 // Mock context for Netlify edge functions
 const mockContext = {
   site: { id: "test-site" },
-  deploy: { id: "test-deploy" }
+  deploy: { id: "test-deploy" },
 };
 
 Deno.test("RTS function - missing userId should return 400", async () => {
@@ -19,8 +23,8 @@ Deno.test("RTS function - missing userId should return 400", async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       userId: "",
-      attributes: { country: "US" }
-    })
+      attributes: { country: "US" },
+    }),
   });
 
   const response = await rtsFunction(request, mockContext);
@@ -36,20 +40,26 @@ Deno.test("RTS function - missing userId should return 400", async () => {
 
 Deno.test("RTS function - OPTIONS request should return CORS headers", async () => {
   const request = new Request(RTS_URL, {
-    method: "OPTIONS"
+    method: "OPTIONS",
   });
 
   const response = await rtsFunction(request, mockContext);
 
   assertEquals(response.status, 200);
   assertEquals(response.headers.get("Access-Control-Allow-Origin"), "*");
-  assertEquals(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
-  assertEquals(response.headers.get("Access-Control-Allow-Headers"), "Content-Type");
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Methods"),
+    "GET, POST, OPTIONS",
+  );
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Headers"),
+    "Content-Type",
+  );
 });
 
 Deno.test("RTS function - GET request should return 405", async () => {
   const request = new Request(RTS_URL, {
-    method: "GET"
+    method: "GET",
   });
 
   const response = await rtsFunction(request, mockContext);
@@ -70,10 +80,10 @@ Deno.test("RTS function - valid request structure with mock SDK key", async () =
       attributes: {
         country: "US",
         age: 25,
-        plan: "premium"
+        plan: "premium",
       },
-      flagKey: "test-flag"
-    })
+      flagKey: "test-flag",
+    }),
   });
 
   const response = await rtsFunction(request, mockContext);
@@ -99,8 +109,8 @@ Deno.test("RTS function - response structure validation", async () => {
     body: JSON.stringify({
       userId: "test-user-456",
       attributes: { country: "CA" },
-      flagKey: "test-flag"
-    })
+      flagKey: "test-flag",
+    }),
   });
 
   const response = await rtsFunction(request, mockContext);
