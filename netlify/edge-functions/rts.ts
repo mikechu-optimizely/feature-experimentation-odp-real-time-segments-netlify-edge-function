@@ -6,10 +6,13 @@ import { RTSService } from "../../src/RTSService.ts";
 
 // Interface for Optimizely Client
 interface OptimizelyClient {
-  createUserContext(userId: string, attributes: Record<string, unknown>): OptimizelyUserContext;
+  createUserContext(
+    userId: string,
+    attributes: Record<string, unknown>,
+  ): OptimizelyUserContext;
 }
 
-// Interface for Optimizely UserContext  
+// Interface for Optimizely UserContext
 interface OptimizelyUserContext {
   fetchQualifiedSegments(): Promise<string[]>;
   decide(flagKey: string): {
@@ -19,7 +22,10 @@ interface OptimizelyUserContext {
   };
 }
 
-export default async (request: Request, _context: unknown): Promise<Response> => {
+export default async (
+  request: Request,
+  _context: unknown,
+): Promise<Response> => {
   // Variables to track parsed request data
   let parsedBody: RTSTestRequest | null = null;
   const clientManager = new OptimizelyClientManager();
@@ -61,7 +67,9 @@ export default async (request: Request, _context: unknown): Promise<Response> =>
     // Initialize Optimizely client
     let optimizelyClient: OptimizelyClient;
     try {
-      optimizelyClient = await clientManager.initialize({ sdkKey }) as OptimizelyClient;
+      optimizelyClient = await clientManager.initialize({
+        sdkKey,
+      }) as OptimizelyClient;
     } catch (initError) {
       console.error("❌ Optimizely SDK failed to initialize:", initError);
       return ResponseHelper.createErrorResponse(
