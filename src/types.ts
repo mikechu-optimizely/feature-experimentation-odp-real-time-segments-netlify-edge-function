@@ -1,13 +1,13 @@
 export interface RTSTestRequest {
   userId: string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   sdkKey?: string;
   flagKey?: string;
 }
 
 export interface RTSTestMetadata {
   userId: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   timestamp: string;
   flagKey?: string;
   flagResult?: {

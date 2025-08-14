@@ -1,12 +1,22 @@
-import { RTSTestMetadata, RTSTestRequest, RTSTestResponse } from "./types.ts";
+import { RTSTestMetadata, RTSTestRequest } from "./types.ts";
+
+// Interface for Optimizely UserContext
+interface OptimizelyUserContext {
+  fetchQualifiedSegments(): Promise<string[]>;
+  decide(flagKey: string): {
+    variationKey?: string;
+    enabled?: boolean;
+    reasons?: string[];
+  };
+}
 
 export class RTSService {
   static async processUserSegments(
-    userContext: any,
+    userContext: OptimizelyUserContext,
     body: RTSTestRequest,
   ): Promise<{ qualifiedSegments: string[]; metadata: RTSTestMetadata }> {
     // Test fetchQualifiedSegments
-    let qualifiedSegments = [];
+    let qualifiedSegments: string[] = [];
     try {
       qualifiedSegments = await userContext.fetchQualifiedSegments();
       console.info(
@@ -41,6 +51,6 @@ export class RTSService {
       }
     }
 
-    return { qualifiedSegments: qualifiedSegments || [], metadata };
+    return { qualifiedSegments, metadata };
   }
 }
