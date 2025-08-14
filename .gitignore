@@ -44,5 +44,8 @@ pids
 tmp/
 temp/
 
-## Docs
+# Docs
 docs/
+
+# Coverage reports
+coverage/
