@@ -1,9 +1,8 @@
 import {
-  createEventDispatcher,
   createInstance,
-  createStaticProjectConfigManager,
+  createPollingProjectConfigManager,
+  createForwardingEventProcessor,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
-import { MapEventStore } from "./MapEventStore.ts";
 
 export interface OptimizelyClientConfig {
   sdkKey: string;
@@ -11,26 +10,81 @@ export interface OptimizelyClientConfig {
   timeout?: number;
 }
 
+// Custom request handler that returns AbortableRequest
+interface AbortableRequest {
+  responsePromise: Promise<{
+    statusCode: number;
+    body: string;
+    headers: Record<string, string>;
+  }>;
+  abort: () => void;
+}
+
+interface RequestHandler {
+  makeRequest(url: string, headers?: Record<string, string>, method?: string, data?: string): AbortableRequest;
+}
+
+class CustomRequestHandler implements RequestHandler {
+  makeRequest(url: string, headers: Record<string, string> = {}, method: string = 'GET', data?: string): AbortableRequest {
+    const controller = new AbortController();
+    
+    const requestOptions: RequestInit = {
+      method,
+      headers,
+      signal: controller.signal,
+    };
+    
+    if (data && (method === 'POST' || method === 'PUT')) {
+      requestOptions.body = data;
+    }
+    
+    const responsePromise = fetch(url, requestOptions)
+      .then(async response => {
+        const body = await response.text();
+        return {
+          statusCode: response.status,
+          body: body, // Return the body as a string, not a Promise
+          headers: Object.fromEntries(response.headers.entries()),
+        };
+      })
+      .catch(error => {
+        if (error.name === 'AbortError') {
+          throw new Error('Request aborted');
+        }
+        throw error;
+      });
+    
+    return {
+      responsePromise,
+      abort: () => controller.abort(),
+    };
+  }
+}
+
+// Custom event dispatcher
+const customEventDispatcher = {
+  dispatchEvent: (event: unknown) => {
+    console.debug('📤 Sending event to Optimizely:', event);
+    return Promise.resolve({});
+  },
+};
+
 export class OptimizelyClientManager {
   private client: ReturnType<typeof createInstance> | null = null;
 
   async initialize(config: OptimizelyClientConfig): Promise<unknown> {
-    const staticConfigManager = createStaticProjectConfigManager({
+    const pollingConfigManager = createPollingProjectConfigManager({
       sdkKey: config.sdkKey,
+      requestHandler: new CustomRequestHandler(),
     });
 
-    const batchEventProcessor = createEventDispatcher({
-      eventStore: new MapEventStore(),
-      eventDispatcher: {
-        dispatchEvent: (event: unknown) => {
-          console.debug('📤 Sending event to Optimizely:', event);
-        },
-      },
-    });
+    // Create forwarding event processor with custom event dispatcher
+    const forwardingEventProcessor = createForwardingEventProcessor(customEventDispatcher);
 
     this.client = createInstance({
-      projectConfigManager: staticConfigManager,
-      eventProcessor: batchEventProcessor,
+      projectConfigManager: pollingConfigManager,
+      eventProcessor: forwardingEventProcessor,
+      requestHandler: new CustomRequestHandler(),
       disposable: true, // Enable auto-disposal for edge environment
     });
 
