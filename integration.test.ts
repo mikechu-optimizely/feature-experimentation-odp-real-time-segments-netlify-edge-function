@@ -4,7 +4,7 @@
 
 declare const Deno: any;
 
-const TEST_URL = 'http://localhost:8000/api/rts-test';
+const TEST_URL = 'http://localhost:8000/api/rts';
 const HELLO_URL = 'http://localhost:8000/api/hello';
 
 interface TestCase {
