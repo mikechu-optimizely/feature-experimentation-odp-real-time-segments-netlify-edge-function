@@ -5,9 +5,5 @@
   edge_functions = "netlify/edge-functions"
 
 [[edge_functions]]
-  function = "hello"
-  path = "/api/hello"
-
-[[edge_functions]]
   function = "rts"
   path = "/api/rts"

@@ -4,10 +4,7 @@ A Netlify Edge Function using Deno to test Optimizely SDK v6.0.0 Universal Bundl
 
 ## Functions
 
-### 1. Hello Function (`/api/hello`)
-A simple test function that returns "hello world".
-
-### 2. RTS Test Function (`/api/rts-test`)
+### RTS Test Function (`/api/rts`)
 Tests the Optimizely SDK v6.0.0 universal bundle with Real Time Segments functionality.
 
 **Features:**
@@ -107,14 +104,13 @@ Start the development server and test manually:
 ```bash
 deno task dev
 ```
-Then test the endpoints:
-- Hello function: `http://localhost:8000/api/hello`
-- RTS test function: `http://localhost:8000/api/rts-test`
+Then test the endpoint:
+- RTS test function: `http://localhost:8000/api/rts`
 
 ### Option 4: Manual RTS Testing
 Use curl to test the RTS function:
 ```bash
-curl -X POST http://localhost:8000/api/rts-test \
+curl -X POST http://localhost:8000/api/rts \
   -H "Content-Type: application/json" \
   -d '{
     "userId": "test-user-123",
@@ -131,9 +127,8 @@ If you have Netlify CLI installed:
 ```bash
 netlify dev
 ```
-Functions available at:
-- `http://localhost:8888/api/hello`
-- `http://localhost:8888/api/rts-test`
+Function available at:
+- `http://localhost:8888/api/rts`
 
 ## Available Deno Tasks
 
@@ -198,7 +193,7 @@ This project tests the **universal bundle** (`index.universal.es.min.js`) instea
 ## Function Endpoint
 
 Once deployed, your Edge Function will be available at:
-`https://your-site-name.netlify.app/api/hello`
+`https://your-site-name.netlify.app/api/rts`
 
 ## Key Benefits of Deno Edge Functions
 
@@ -207,12 +202,3 @@ Once deployed, your Edge Function will be available at:
 - **TypeScript Native**: Built-in TypeScript support without compilation
 - **Web Standards**: Uses standard Web APIs (Request/Response)
 - **No Dependencies**: No need for node_modules or package installation
-
-## Response
-
-The function returns a JSON response:
-```json
-{
-  "message": "hello world"
-}
-```

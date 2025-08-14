@@ -1,11 +1,6 @@
 ## For use with VS Code's REST Client extension
 ## https://marketplace.visualstudio.com/items?itemName=humao.rest-client
 
-### Test Hello Function
-GET http://localhost:8000/api/hello
-
-###
-
 ### Test RTS Function (Local)
 POST http://localhost:8000/api/rts
 Content-Type: application/json

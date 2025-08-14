@@ -2,16 +2,16 @@
 // Run with: deno run --allow-net integration.test.ts
 // Requires the server to be running: deno task dev
 
+// deno-lint-ignore no-explicit-any
 declare const Deno: any;
 
 const TEST_URL = 'http://localhost:8000/api/rts';
-const HELLO_URL = 'http://localhost:8000/api/hello';
 
 interface TestCase {
   name: string;
   payload: {
     userId: string;
-    attributes?: Record<string, any>;
+    attributes?: Record<string, unknown>;
     sdkKey?: string;
     flagKey?: string;
   };
@@ -65,8 +65,17 @@ const testCases: TestCase[] = [
 
 async function checkServerHealth(): Promise<boolean> {
   try {
-    const response = await fetch(HELLO_URL);
-    return response.ok;
+    const response = await fetch(TEST_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId: 'health-check',
+        attributes: {}
+      })
+    });
+    return response.status !== 404; // As long as endpoint exists, consider healthy
   } catch {
     return false;
   }
@@ -106,7 +115,7 @@ async function runIntegrationTest(testCase: TestCase): Promise<void> {
     }
     
   } catch (error) {
-    console.log(`   ❌ Test failed with error:`, error.message);
+    console.log(`   ❌ Test failed with error:`, (error as Error).message);
   }
 }
 
