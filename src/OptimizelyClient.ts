@@ -2,6 +2,7 @@ import {
   createForwardingEventProcessor,
   createInstance,
   createPollingProjectConfigManager,
+  createOdpManager,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 
 export interface OptimizelyClientConfig {
@@ -51,6 +52,7 @@ class CustomRequestHandler implements RequestHandler {
     const responsePromise = fetch(url, requestOptions)
       .then(async (response) => {
         const body = await response.text();
+        console.debug("📥 Received response from Optimizely:", body);
         return {
           statusCode: response.status,
           body: body, // Return the body as a string, not a Promise
@@ -83,9 +85,11 @@ export class OptimizelyClientManager {
   private client: ReturnType<typeof createInstance> | null = null;
 
   async initialize(config: OptimizelyClientConfig): Promise<unknown> {
+    const requestHandler = new CustomRequestHandler();
+
     const pollingConfigManager = createPollingProjectConfigManager({
       sdkKey: config.sdkKey,
-      requestHandler: new CustomRequestHandler(),
+      requestHandler,
     });
 
     // Create forwarding event processor with custom event dispatcher
@@ -93,11 +97,22 @@ export class OptimizelyClientManager {
       customEventDispatcher,
     );
 
+    const odpManager = createOdpManager({
+      eventApiTimeout: 1_000,
+      segmentsApiTimeout: 1_000,
+      segmentsCacheSize: 10,
+      segmentsCacheTimeout: 1_000,
+      eventBatchSize: 5,
+      eventFlushInterval: 3_000,
+      requestHandler,
+    });
+
     this.client = createInstance({
       projectConfigManager: pollingConfigManager,
       eventProcessor: forwardingEventProcessor,
-      requestHandler: new CustomRequestHandler(),
       disposable: true, // Enable auto-disposal for edge environment
+      requestHandler,
+      odpManager,
     });
 
     // Wait for SDK to be ready with timeout

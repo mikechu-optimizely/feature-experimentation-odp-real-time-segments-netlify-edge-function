@@ -1,8 +1,15 @@
 import { RTSTestMetadata, RTSTestRequest } from "./types.ts";
 
+// Optimizely Segment Options (matching the SDK enum)
+export enum OptimizelySegmentOption {
+  IGNORE_CACHE = 'IGNORE_CACHE',
+  RESET_CACHE = 'RESET_CACHE',
+}
+
 // Interface for Optimizely UserContext
 interface OptimizelyUserContext {
-  fetchQualifiedSegments(): Promise<string[]>;
+  fetchQualifiedSegments(options?: OptimizelySegmentOption[]): Promise<boolean>;
+  qualifiedSegments: string[];
   decide(flagKey: string): {
     variationKey?: string;
     enabled?: boolean;
@@ -15,28 +22,26 @@ export class RTSService {
     userContext: OptimizelyUserContext,
     body: RTSTestRequest,
   ): Promise<{ qualifiedSegments: string[]; metadata: RTSTestMetadata }> {
-    // Test fetchQualifiedSegments
+    // Test fetchQualifiedSegments with IGNORE_CACHE option
     let qualifiedSegments: string[] = [];
     try {
-      const result = await userContext.fetchQualifiedSegments();
+      const fetchedSuccessfully = await userContext.fetchQualifiedSegments([
+        OptimizelySegmentOption.IGNORE_CACHE
+      ]);
 
-      // Ensure we always have an array
-      if (Array.isArray(result)) {
-        qualifiedSegments = result;
-      } else {
-        console.warn("⚠️ fetchQualifiedSegments returned non-array:", result);
-        qualifiedSegments = [];
+      if (fetchedSuccessfully) {
+        qualifiedSegments = userContext.qualifiedSegments;
+        console.info(
+          `🏷️ Qualified segments fetched successfully: ${qualifiedSegments?.length || 0
+          }`,
+        );
+      }
+      else {
+        console.warn("⚠️ No qualified segments fetched.");
       }
 
-      console.info(
-        `🏷️ Qualified segments fetched successfully: ${
-          qualifiedSegments?.length || 0
-        }`,
-      );
     } catch (segmentsError) {
-      console.warn("⚠️ Failed to fetch qualified segments:", segmentsError);
-      // Don't throw here, just log the error and continue with empty segments
-      qualifiedSegments = [];
+      console.warn("⚠️ Error while fetching qualified segments:", segmentsError);
     }
 
     const metadata: RTSTestMetadata = {

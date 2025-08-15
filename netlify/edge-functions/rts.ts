@@ -2,7 +2,7 @@ import { RTSTestRequest } from "../../src/types.ts";
 import { OptimizelyClientManager } from "../../src/OptimizelyClient.ts";
 import { ResponseHelper } from "../../src/ResponseHelper.ts";
 import { RequestValidator } from "../../src/RequestValidator.ts";
-import { RTSService } from "../../src/RTSService.ts";
+import { RTSService, OptimizelySegmentOption } from "../../src/RTSService.ts";
 
 // Interface for Optimizely Client
 interface OptimizelyClient {
@@ -14,7 +14,8 @@ interface OptimizelyClient {
 
 // Interface for Optimizely UserContext
 interface OptimizelyUserContext {
-  fetchQualifiedSegments(): Promise<string[]>;
+  fetchQualifiedSegments(options?: OptimizelySegmentOption[]): Promise<boolean>;
+  qualifiedSegments: string[];
   decide(flagKey: string): {
     variationKey?: string;
     enabled?: boolean;
