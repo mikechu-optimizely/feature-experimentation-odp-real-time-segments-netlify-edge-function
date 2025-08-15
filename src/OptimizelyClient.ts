@@ -30,7 +30,7 @@ interface RequestHandler {
   ): AbortableRequest;
 }
 
-class CustomRequestHandler implements RequestHandler {
+export class CustomRequestHandler implements RequestHandler {
   private activeControllers = new Set<AbortController>();
 
   makeRequest(
