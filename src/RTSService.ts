@@ -47,9 +47,9 @@ export class RTSService {
 
     // If a flag key is provided, also test flag evaluation
     if (body.flagKey) {
+      metadata.flagKey = body.flagKey;
       try {
         const flagResult = userContext.decide(body.flagKey);
-        metadata.flagKey = body.flagKey;
         metadata.flagResult = {
           variationKey: flagResult.variationKey || "null",
           enabled: flagResult.enabled || false,
