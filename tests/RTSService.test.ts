@@ -3,17 +3,23 @@ import {
   assertExists,
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { RTSService } from "../src/RTSService.ts";
-import { RTSTestRequest, OptimizelyUserContext } from "../src/types.ts";
+import { OptimizelyUserContext, RTSTestRequest } from "../src/types.ts";
 
 // Mock user context for testing
 const createMockUserContext = (
   fetchResult: boolean = true,
   segments: string[] = [],
-  flagResult: { variationKey: string; enabled: boolean; reasons: string[] } | null = null,
+  flagResult: {
+    variationKey: string | null;
+    enabled: boolean;
+    reasons: string[];
+  } | null = null,
 ): OptimizelyUserContext => {
   return {
     fetchQualifiedSegments: (_options: unknown) => {
-      console.info(`🏷️ Qualified segments fetched successfully: ${segments.length}`);
+      console.info(
+        `🏷️ Qualified segments fetched successfully: ${segments.length}`,
+      );
       return Promise.resolve(fetchResult);
     },
     qualifiedSegments: segments,
@@ -146,4 +152,85 @@ Deno.test("RTSService - processUserSegments with no attributes", async () => {
   assertEquals(result.metadata.userId, "test-user");
   assertEquals(result.metadata.attributes, {});
   assertExists(result.metadata.timestamp);
+});
+
+Deno.test("RTSService - processUserSegments with empty segments array", async () => {
+  const userContext = createMockUserContext(true, []);
+  const request: RTSTestRequest = {
+    userId: "test-user",
+    attributes: { country: "US", age: 30 },
+  };
+
+  const result = await RTSService.processUserSegments(userContext, request);
+
+  assertEquals(result.qualifiedSegments, []);
+  assertEquals(result.metadata.userId, "test-user");
+  assertEquals(result.metadata.attributes.country, "US");
+  assertEquals(result.metadata.attributes.age, 30);
+  assertExists(result.metadata.timestamp);
+});
+
+Deno.test("RTSService - processUserSegments with flag having null variation", async () => {
+  const flagResult = {
+    variationKey: null,
+    enabled: false,
+    reasons: ["FLAG_DISABLED"],
+  };
+  const userContext = createMockUserContext(true, ["segment1"], flagResult);
+  const request: RTSTestRequest = {
+    userId: "test-user",
+    attributes: { country: "US" },
+    flagKey: "disabled-flag",
+  };
+
+  const result = await RTSService.processUserSegments(userContext, request);
+
+  assertEquals(result.qualifiedSegments, ["segment1"]);
+  assertEquals(result.metadata.userId, "test-user");
+  assertEquals(result.metadata.flagKey, "disabled-flag");
+  assertExists(result.metadata.flagResult);
+  assertEquals(result.metadata.flagResult?.variationKey, "null");
+  assertEquals(result.metadata.flagResult?.enabled, false);
+});
+
+Deno.test("RTSService - processUserSegments with flag having empty reasons", async () => {
+  const flagResult = {
+    variationKey: "control",
+    enabled: true,
+    reasons: [],
+  };
+  const userContext = createMockUserContext(true, ["segment1"], flagResult);
+  const request: RTSTestRequest = {
+    userId: "test-user",
+    attributes: { country: "US" },
+    flagKey: "no-reasons-flag",
+  };
+
+  const result = await RTSService.processUserSegments(userContext, request);
+
+  assertEquals(result.qualifiedSegments, ["segment1"]);
+  assertEquals(result.metadata.flagResult?.reasons, []);
+});
+
+Deno.test("RTSService - processUserSegments with undefined qualified segments", async () => {
+  const userContext = {
+    fetchQualifiedSegments: (_options: unknown) => Promise.resolve(true),
+    qualifiedSegments: undefined,
+    decide: (_flagKey: string) => ({
+      variationKey: "control",
+      enabled: true,
+      reasons: ["TRAFFIC_ALLOCATED"],
+    }),
+  } as unknown as OptimizelyUserContext;
+
+  const request: RTSTestRequest = {
+    userId: "test-user",
+    attributes: { country: "US" },
+  };
+
+  const result = await RTSService.processUserSegments(userContext, request);
+
+  // Should handle undefined gracefully
+  assertEquals(result.qualifiedSegments, undefined);
+  assertEquals(result.metadata.userId, "test-user");
 });

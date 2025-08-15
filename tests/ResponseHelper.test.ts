@@ -1,6 +1,4 @@
-import {
-  assertEquals,
-} from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import { ResponseHelper } from "../src/ResponseHelper.ts";
 
 Deno.test("ResponseHelper - createSuccessResponse", async () => {
@@ -18,8 +16,14 @@ Deno.test("ResponseHelper - createSuccessResponse", async () => {
   assertEquals(response.status, 200);
   assertEquals(response.headers.get("Content-Type"), "application/json");
   assertEquals(response.headers.get("Access-Control-Allow-Origin"), "*");
-  assertEquals(response.headers.get("Access-Control-Allow-Headers"), "Content-Type");
-  assertEquals(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Headers"),
+    "Content-Type",
+  );
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Methods"),
+    "GET, POST, OPTIONS",
+  );
 
   const body = await response.json();
   assertEquals(body.success, true);
@@ -45,7 +49,11 @@ Deno.test("ResponseHelper - createErrorResponse with custom status", async () =>
     timestamp: "2025-01-01T00:00:00.000Z",
   };
 
-  const response = ResponseHelper.createErrorResponse("Validation error", 400, metadata);
+  const response = ResponseHelper.createErrorResponse(
+    "Validation error",
+    400,
+    metadata,
+  );
 
   assertEquals(response.status, 400);
 
@@ -60,8 +68,14 @@ Deno.test("ResponseHelper - createCorsResponse", () => {
 
   assertEquals(response.status, 200);
   assertEquals(response.headers.get("Access-Control-Allow-Origin"), "*");
-  assertEquals(response.headers.get("Access-Control-Allow-Headers"), "Content-Type");
-  assertEquals(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Headers"),
+    "Content-Type",
+  );
+  assertEquals(
+    response.headers.get("Access-Control-Allow-Methods"),
+    "GET, POST, OPTIONS",
+  );
 });
 
 Deno.test("ResponseHelper - createMethodNotAllowedResponse", async () => {
@@ -76,7 +90,9 @@ Deno.test("ResponseHelper - createMethodNotAllowedResponse", async () => {
 });
 
 Deno.test("ResponseHelper - createValidationErrorResponse", async () => {
-  const response = ResponseHelper.createValidationErrorResponse("Invalid input");
+  const response = ResponseHelper.createValidationErrorResponse(
+    "Invalid input",
+  );
 
   assertEquals(response.status, 400);
   assertEquals(response.headers.get("Content-Type"), "application/json");
