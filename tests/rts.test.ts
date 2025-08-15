@@ -1,18 +1,15 @@
 // Unit tests for RTS edge function
-// @ts-ignore - External modules
 import {
   assertEquals,
   assertExists,
   assertInstanceOf,
 } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import rtsFunction from "./netlify/edge-functions/rts.ts";
-
-declare const Deno: any;
+import rtsFunction from "../netlify/edge-functions/rts.ts";
 
 const RTS_URL = "http://localhost:8000/api/rts";
 
 // Mock context for Netlify edge functions
-const mockContext = {
+const mockContext: unknown = {
   site: { id: "test-site" },
   deploy: { id: "test-deploy" },
 };
