@@ -1,8 +1,8 @@
 import {
   createForwardingEventProcessor,
   createInstance,
-  createPollingProjectConfigManager,
   createOdpManager,
+  createPollingProjectConfigManager,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 
 export interface OptimizelyClientConfig {
@@ -31,6 +31,8 @@ interface RequestHandler {
 }
 
 class CustomRequestHandler implements RequestHandler {
+  private activeControllers = new Set<AbortController>();
+
   makeRequest(
     url: string,
     headers: Record<string, string> = {},
@@ -38,6 +40,7 @@ class CustomRequestHandler implements RequestHandler {
     data?: string,
   ): AbortableRequest {
     const controller = new AbortController();
+    this.activeControllers.add(controller);
 
     const requestOptions: RequestInit = {
       method,
@@ -52,6 +55,7 @@ class CustomRequestHandler implements RequestHandler {
     const responsePromise = fetch(url, requestOptions)
       .then(async (response) => {
         const body = await response.text();
+        this.activeControllers.delete(controller);
         return {
           statusCode: response.status,
           body: body, // Return the body as a string, not a Promise
@@ -59,6 +63,7 @@ class CustomRequestHandler implements RequestHandler {
         };
       })
       .catch((error) => {
+        this.activeControllers.delete(controller);
         if (error.name === "AbortError") {
           throw new Error("Request aborted");
         }
@@ -67,8 +72,18 @@ class CustomRequestHandler implements RequestHandler {
 
     return {
       responsePromise,
-      abort: () => controller.abort(),
+      abort: () => {
+        controller.abort();
+        this.activeControllers.delete(controller);
+      },
     };
+  }
+
+  abortAll(): void {
+    for (const controller of this.activeControllers) {
+      controller.abort();
+    }
+    this.activeControllers.clear();
   }
 }
 
@@ -82,13 +97,18 @@ const customEventDispatcher = {
 
 export class OptimizelyClientManager {
   private client: ReturnType<typeof createInstance> | null = null;
+  private pollingConfigManager:
+    | ReturnType<typeof createPollingProjectConfigManager>
+    | null = null;
+  private odpManager: ReturnType<typeof createOdpManager> | null = null;
+  private requestHandler: CustomRequestHandler | null = null;
 
   async initialize(config: OptimizelyClientConfig): Promise<unknown> {
-    const requestHandler = new CustomRequestHandler();
+    this.requestHandler = new CustomRequestHandler();
 
-    const pollingConfigManager = createPollingProjectConfigManager({
+    this.pollingConfigManager = createPollingProjectConfigManager({
       sdkKey: config.sdkKey,
-      requestHandler,
+      requestHandler: this.requestHandler,
     });
 
     // Create forwarding event processor with custom event dispatcher
@@ -96,22 +116,22 @@ export class OptimizelyClientManager {
       customEventDispatcher,
     );
 
-    const odpManager = createOdpManager({
+    this.odpManager = createOdpManager({
       eventApiTimeout: 1_000,
       segmentsApiTimeout: 1_000,
       segmentsCacheSize: 10,
       segmentsCacheTimeout: 1_000,
       eventBatchSize: 5,
       eventFlushInterval: 3_000,
-      requestHandler,
+      requestHandler: this.requestHandler,
     });
 
     this.client = createInstance({
-      projectConfigManager: pollingConfigManager,
+      projectConfigManager: this.pollingConfigManager,
       eventProcessor: forwardingEventProcessor,
       disposable: true, // Enable auto-disposal for edge environment
-      requestHandler,
-      odpManager,
+      requestHandler: this.requestHandler,
+      odpManager: this.odpManager,
     });
 
     // Wait for SDK to be ready with timeout
@@ -133,6 +153,11 @@ export class OptimizelyClientManager {
   }
 
   close(): void {
+    // First, abort any active HTTP requests
+    if (this.requestHandler) {
+      this.requestHandler.abortAll();
+    }
+
     if (this.client) {
       try {
         if (typeof this.client.close === "function") {
@@ -145,5 +170,10 @@ export class OptimizelyClientManager {
         this.client = null; // Still null it out even if close failed
       }
     }
+
+    // Clear manager references
+    this.pollingConfigManager = null;
+    this.odpManager = null;
+    this.requestHandler = null;
   }
 }
