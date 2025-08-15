@@ -2,7 +2,7 @@
   "tasks": {
     "test": "deno test --env-file --allow-env --allow-read --allow-import --allow-net --parallel",
     "test:integration": "deno run --allow-net --env-file --allow-env --allow-read tests/integration.test.ts",
-    "test:coverage": "deno test --env-file --allow-env --allow-read --allow-import --allow-net --coverage && deno coverage --output=coverage/lcov.info --lcov coverage/",
+    "test:coverage": "deno test --env-file --allow-env --allow-read --allow-import --allow-net --parallel --coverage && deno coverage --detailed --output=coverage/lcov.info --lcov coverage/",
     "dev": "deno run --allow-net --allow-import --env-file --allow-env --allow-read server.ts",
     "lint": "deno lint src/ netlify/",
     "lint:fix": "deno lint --fix src/ netlify/",
