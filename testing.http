@@ -6,7 +6,7 @@ POST http://localhost:8000/api/rts
 Content-Type: application/json
 
 {
-    "userId": "e4f7a2d8-9b3c-4e1f-7a8d-2c5b6e9f1a3d",
+    "userId": "f8d2a6c9-3e5b-4f1d-8a7c-2b4e6f9a3d8c",
     "attributes": {
         "location": "US",
         "device": "mobile"
@@ -21,7 +21,7 @@ POST https://optimizely-fx-rts-at-netlify.netlify.app/api/rts
 Content-Type: application/json
 
 {
-    "userId": "e4f7a2d8-9b3c-4e1f-7a8d-2c5b6e9f1a3d",
+    "userId": "f8d2a6c9-3e5b-4f1d-8a7c-2b4e6f9a3d8c",
     "attributes": {
         "location": "US",
         "device": "mobile"
