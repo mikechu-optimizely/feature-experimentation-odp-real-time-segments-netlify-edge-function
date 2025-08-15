@@ -52,7 +52,6 @@ class CustomRequestHandler implements RequestHandler {
     const responsePromise = fetch(url, requestOptions)
       .then(async (response) => {
         const body = await response.text();
-        console.debug("📥 Received response from Optimizely:", body);
         return {
           statusCode: response.status,
           body: body, // Return the body as a string, not a Promise
