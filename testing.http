@@ -6,10 +6,10 @@ POST http://localhost:8000/api/rts
 Content-Type: application/json
 
 {
-    "userId": "test-user-123",
+    "userId": "e4f7a2d8-9b3c-4e1f-7a8d-2c5b6e9f1a3d",
     "attributes": {
-        "age": 25,
-        "location": "US"
+        "location": "US",
+        "device": "mobile"
     },
     "flagKey": "over_21_message"
 }
@@ -21,10 +21,10 @@ POST https://optimizely-fx-rts-at-netlify.netlify.app/api/rts
 Content-Type: application/json
 
 {
-    "userId": "test-user-123",
+    "userId": "e4f7a2d8-9b3c-4e1f-7a8d-2c5b6e9f1a3d",
     "attributes": {
-        "age": 25,
-        "location": "US"
+        "location": "US",
+        "device": "mobile"
     },
     "flagKey": "over_21_message"
 }
