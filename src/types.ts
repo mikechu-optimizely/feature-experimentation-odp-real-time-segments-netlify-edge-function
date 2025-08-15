@@ -1,3 +1,14 @@
+import type { createInstance } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
+
+// Extract types from the Optimizely SDK using ReturnType inference
+type OptimizelyInstance = ReturnType<typeof createInstance>;
+export type OptimizelyUserContext = ReturnType<
+  OptimizelyInstance["createUserContext"]
+>;
+export type OptimizelyDecision = ReturnType<OptimizelyUserContext["decide"]>;
+export type UserAttributes = Record<string, unknown>;
+export type EventTags = Record<string, string | number | boolean>;
+
 export interface RTSTestRequest {
   userId: string;
   attributes?: Record<string, unknown>;
@@ -24,20 +35,5 @@ export interface RTSTestResponse {
   metadata?: RTSTestMetadata;
 }
 
-// Optimizely SDK interfaces (shared across multiple files)
-export interface OptimizelyClient {
-  createUserContext(
-    userId: string,
-    attributes: Record<string, unknown>,
-  ): OptimizelyUserContext;
-}
-
-export interface OptimizelyUserContext {
-  fetchQualifiedSegments(options?: unknown[]): Promise<boolean>;
-  qualifiedSegments: string[];
-  decide(flagKey: string): {
-    variationKey?: string;
-    enabled?: boolean;
-    reasons?: string[];
-  };
-}
+// Use the actual Optimizely client instance type
+export type OptimizelyClient = OptimizelyInstance;
