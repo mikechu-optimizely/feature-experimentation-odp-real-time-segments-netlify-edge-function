@@ -3,7 +3,7 @@ export * from "./types.ts";
 
 // Core services
 export { OptimizelyClientManager } from "./OptimizelyClient.ts";
-export { RTSService, OptimizelySegmentOption } from "./RTSService.ts";
+export { OptimizelySegmentOption, RTSService } from "./RTSService.ts";
 export { MapEventStore } from "./MapEventStore.ts";
 
 // Utilities

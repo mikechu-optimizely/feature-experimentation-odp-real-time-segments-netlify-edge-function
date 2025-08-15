@@ -2,8 +2,8 @@ import { RTSTestMetadata, RTSTestRequest } from "./types.ts";
 
 // Optimizely Segment Options (matching the SDK enum)
 export enum OptimizelySegmentOption {
-  IGNORE_CACHE = 'IGNORE_CACHE',
-  RESET_CACHE = 'RESET_CACHE',
+  IGNORE_CACHE = "IGNORE_CACHE",
+  RESET_CACHE = "RESET_CACHE",
 }
 
 // Interface for Optimizely UserContext
@@ -26,22 +26,24 @@ export class RTSService {
     let qualifiedSegments: string[] = [];
     try {
       const fetchedSuccessfully = await userContext.fetchQualifiedSegments([
-        OptimizelySegmentOption.IGNORE_CACHE
+        OptimizelySegmentOption.IGNORE_CACHE,
       ]);
 
       if (fetchedSuccessfully) {
         qualifiedSegments = userContext.qualifiedSegments;
         console.info(
-          `🏷️ Qualified segments fetched successfully: ${qualifiedSegments?.length || 0
+          `🏷️ Qualified segments fetched successfully: ${
+            qualifiedSegments?.length || 0
           }`,
         );
-      }
-      else {
+      } else {
         console.warn("⚠️ No qualified segments fetched.");
       }
-
     } catch (segmentsError) {
-      console.warn("⚠️ Error while fetching qualified segments:", segmentsError);
+      console.warn(
+        "⚠️ Error while fetching qualified segments:",
+        segmentsError,
+      );
     }
 
     const metadata: RTSTestMetadata = {

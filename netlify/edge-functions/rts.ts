@@ -2,7 +2,7 @@ import { RTSTestRequest } from "../../src/types.ts";
 import { OptimizelyClientManager } from "../../src/OptimizelyClient.ts";
 import { ResponseHelper } from "../../src/ResponseHelper.ts";
 import { RequestValidator } from "../../src/RequestValidator.ts";
-import { RTSService, OptimizelySegmentOption } from "../../src/RTSService.ts";
+import { OptimizelySegmentOption, RTSService } from "../../src/RTSService.ts";
 
 // Interface for Optimizely Client
 interface OptimizelyClient {
