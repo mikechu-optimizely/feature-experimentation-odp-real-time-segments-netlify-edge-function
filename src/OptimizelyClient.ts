@@ -4,31 +4,11 @@ import {
   createOdpManager,
   createPollingProjectConfigManager,
 } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
-
-export interface OptimizelyClientConfig {
-  sdkKey: string;
-  updateInterval?: number;
-  timeout?: number;
-}
-
-// Custom request handler that returns AbortableRequest
-interface AbortableRequest {
-  responsePromise: Promise<{
-    statusCode: number;
-    body: string;
-    headers: Record<string, string>;
-  }>;
-  abort: () => void;
-}
-
-interface RequestHandler {
-  makeRequest(
-    url: string,
-    headers?: Record<string, string>,
-    method?: string,
-    data?: string,
-  ): AbortableRequest;
-}
+import type {
+  AbortableRequest,
+  OptimizelyClientConfig,
+  RequestHandler,
+} from "./types.ts";
 
 export class CustomRequestHandler implements RequestHandler {
   private activeControllers = new Set<AbortController>();

@@ -1,3 +1,27 @@
+export interface AbortableRequest {
+  responsePromise: Promise<{
+    statusCode: number;
+    body: string;
+    headers: Record<string, string>;
+  }>;
+  abort: () => void;
+}
+
+export interface RequestHandler {
+  makeRequest(
+    url: string,
+    headers?: Record<string, string>,
+    method?: string,
+    data?: string,
+  ): AbortableRequest;
+}
+
+export interface OptimizelyClientConfig {
+  sdkKey: string;
+  updateInterval?: number;
+  timeout?: number;
+}
+
 import type { createInstance } from "https://cdn.skypack.dev/@optimizely/optimizely-sdk@6.0.0/universal";
 
 // Extract types from the Optimizely SDK using ReturnType inference

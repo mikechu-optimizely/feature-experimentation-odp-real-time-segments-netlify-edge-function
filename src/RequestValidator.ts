@@ -1,8 +1,5 @@
 import { RTSTestRequest } from "./types.ts";
 
-// Deno types are available in the global scope in Deno runtime
-// No need to declare them as 'any'
-
 export class RequestValidator {
   static async parseAndValidate(request: Request): Promise<RTSTestRequest> {
     let body: RTSTestRequest;
