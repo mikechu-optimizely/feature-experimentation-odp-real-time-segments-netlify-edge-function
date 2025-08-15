@@ -23,3 +23,21 @@ export interface RTSTestResponse {
   error?: string;
   metadata?: RTSTestMetadata;
 }
+
+// Optimizely SDK interfaces (shared across multiple files)
+export interface OptimizelyClient {
+  createUserContext(
+    userId: string,
+    attributes: Record<string, unknown>,
+  ): OptimizelyUserContext;
+}
+
+export interface OptimizelyUserContext {
+  fetchQualifiedSegments(options?: unknown[]): Promise<boolean>;
+  qualifiedSegments: string[];
+  decide(flagKey: string): {
+    variationKey?: string;
+    enabled?: boolean;
+    reasons?: string[];
+  };
+}

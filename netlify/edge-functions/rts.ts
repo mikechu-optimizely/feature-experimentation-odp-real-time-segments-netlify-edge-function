@@ -1,27 +1,12 @@
-import { RTSTestRequest } from "../../src/types.ts";
+import {
+  OptimizelyClient,
+  OptimizelyUserContext,
+  RTSTestRequest,
+} from "../../src/types.ts";
 import { OptimizelyClientManager } from "../../src/OptimizelyClient.ts";
 import { ResponseHelper } from "../../src/ResponseHelper.ts";
 import { RequestValidator } from "../../src/RequestValidator.ts";
-import { OptimizelySegmentOption, RTSService } from "../../src/RTSService.ts";
-
-// Interface for Optimizely Client
-interface OptimizelyClient {
-  createUserContext(
-    userId: string,
-    attributes: Record<string, unknown>,
-  ): OptimizelyUserContext;
-}
-
-// Interface for Optimizely UserContext
-interface OptimizelyUserContext {
-  fetchQualifiedSegments(options?: OptimizelySegmentOption[]): Promise<boolean>;
-  qualifiedSegments: string[];
-  decide(flagKey: string): {
-    variationKey?: string;
-    enabled?: boolean;
-    reasons?: string[];
-  };
-}
+import { RTSService } from "../../src/RTSService.ts";
 
 export default async (
   request: Request,

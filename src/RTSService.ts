@@ -1,20 +1,13 @@
-import { RTSTestMetadata, RTSTestRequest } from "./types.ts";
+import {
+  OptimizelyUserContext,
+  RTSTestMetadata,
+  RTSTestRequest,
+} from "./types.ts";
 
 // Optimizely Segment Options (matching the SDK enum)
 export enum OptimizelySegmentOption {
   IGNORE_CACHE = "IGNORE_CACHE",
   RESET_CACHE = "RESET_CACHE",
-}
-
-// Interface for Optimizely UserContext
-interface OptimizelyUserContext {
-  fetchQualifiedSegments(options?: OptimizelySegmentOption[]): Promise<boolean>;
-  qualifiedSegments: string[];
-  decide(flagKey: string): {
-    variationKey?: string;
-    enabled?: boolean;
-    reasons?: string[];
-  };
 }
 
 export class RTSService {
